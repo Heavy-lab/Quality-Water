@@ -8,7 +8,6 @@
   }
 </script>
   <meta charset="UTF-8">
-  <!-- Viewport settings optimized to prevent unwanted scaling on mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Daily Water Quality Monitoring Report</title>
   <style>
@@ -19,17 +18,15 @@
       --danger: #dc2626;
     }
 
-    /* Base Reset & Universal Font */
     * { 
       box-sizing: border-box; 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-      -webkit-tap-highlight-color: transparent; /* Removes tap highlight on Android/Chromium */
+      -webkit-tap-highlight-color: transparent; 
     }
 
     body { 
       background-color: #f1f5f9; 
       margin: 0; 
-      /* Supports edge-to-edge screens (iPhone/modern Android notches) */
       padding: env(safe-area-inset-top, 12px) env(safe-area-inset-right, 12px) env(safe-area-inset-bottom, 12px) env(safe-area-inset-left, 12px); 
       color: #0f172a; 
       -webkit-text-size-adjust: 100%; 
@@ -41,7 +38,7 @@
       position: relative; overflow: hidden;
     }
 
-    /* Print View Container */
+    /* Print View Container - Now strictly centered */
     .print-text-block {
       display: none;
       white-space: pre-wrap !important;
@@ -51,9 +48,11 @@
       height: auto !important;
       font-size: 14px;
       width: 100%;
+      text-align: center !important;
+      justify-content: center !important;
+      align-items: center !important;
     }
 
-    /* Header Container */
     .print-header {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 12px; border-bottom: 2px solid var(--primary); padding-bottom: 8px;
@@ -73,11 +72,10 @@
 
     label { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; color: #334155; }
 
-    /* Inputs strictly set to 16px to prevent iOS Safari auto-zoom */
     input[type="text"], input[type="number"], input[type="date"], select {
       width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; 
       font-size: 16px; background-color: #fff;
-      -webkit-appearance: none; appearance: none; /* Strips browser-specific 3D styling */
+      -webkit-appearance: none; appearance: none;
     }
 
     .auto-expand {
@@ -103,7 +101,6 @@
 
     .save-indicator-container { min-width: 140px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
 
-    /* Touch-friendly buttons */
     .btn { background-color: var(--primary); color: white; border: none; padding: 10px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; text-align: center; text-decoration: none; display: inline-block; transition: opacity 0.2s; }
     .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
     .btn-danger { background-color: var(--danger); }
@@ -114,7 +111,6 @@
 
     .exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
 
-    /* Universal Pointer Signature Canvas */
     .sig-container { border: 1px solid var(--border); border-radius: 4px; background: #fff; position: relative; height: 120px; touch-action: none; }
     .sig-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
     .sig-tools { position: absolute; right: 4px; bottom: 4px; z-index: 10; }
@@ -126,14 +122,12 @@
     .photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #eaefe9; border-radius: 4px; }
     .photo-card-actions { display: flex; justify-content: flex-end; }
 
-    /* Media query to shift grid to single column on small phones */
     @media (max-width: 600px) {
       .photo-grid { grid-template-columns: 1fr; }
       .controls-header { flex-direction: column; align-items: stretch; }
       .controls-header > div { display: flex; flex-direction: column; gap: 8px; }
     }
 
-    /* Print Formatting */
     @media print {
       @page { margin: 10mm 8mm; }
       body { background-color: white; padding: 0; font-size: 9pt; }
@@ -147,7 +141,7 @@
       .photo-card img { max-height: 200px !important; object-fit: contain !important; page-break-inside: avoid !important; break-inside: avoid !important; }
       
       input, textarea, select { display: none !important; }
-      .print-text-block { display: block !important; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; min-height: 16px; font-size: 9pt !important; }
+      .print-text-block { display: flex !important; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; min-height: 16px; font-size: 9pt !important; }
       table .print-text-block { border-bottom: none !important; }
       
       .yn-item { border: none !important; border-bottom: 1px dotted #cbd5e1 !important; }
@@ -366,8 +360,11 @@
 
   function autoResize(textarea) {
     if (!textarea) return;
+    // Fix: Locks scroll position so the window doesn't jump to the top when height is evaluated
+    const scrollPos = window.scrollY;
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
+    window.scrollTo(window.scrollX, scrollPos);
   }
 
   function previewLogo(event) {
@@ -633,7 +630,6 @@
     canvas.height = canvas.parentElement.clientHeight || 120;
     ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2; ctx.lineCap = "round";
 
-    // Universally supported pointer events handles touch, stylus, and mouse natively
     canvas.addEventListener('pointerdown', e => {
       e.preventDefault(); canvas.setPointerCapture(e.pointerId); drawing = true;
       const rect = canvas.getBoundingClientRect();
@@ -675,7 +671,7 @@
 
   function triggerPrintOrPDF() {
     preparePrintView();
-    void document.body.offsetHeight; // Forces layout calc before thread blocking
+    void document.body.offsetHeight; 
     window.print();
   }
 
@@ -796,6 +792,9 @@
 
   window.onbeforeprint = preparePrintView;
 
+  // Fix: Save initial window width to prevent height-only resize triggers (like keyboards)
+  let lastWindowWidth = window.innerWidth;
+
   window.onload = () => {
     initSignatureCanvas();
     if (!loadSavedProgress() && document.querySelectorAll('.sample-block').length === 0) addSampleBlock();
@@ -808,12 +807,20 @@
   };
 
   window.onresize = () => {
+    // Fix: Ignore resize if only the height changes (prevents mobile keyboard jumps)
+    if (window.innerWidth === lastWindowWidth) return;
+    lastWindowWidth = window.innerWidth;
+
+    const scrollPos = window.scrollY;
+
     if (canvas) {
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
       ctx.putImageData(imgData, 0, 0); ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2; ctx.lineCap = "round";
     }
     document.querySelectorAll('textarea').forEach(autoResize);
+    
+    window.scrollTo(window.scrollX, scrollPos);
   };
 </script>
 </body>
