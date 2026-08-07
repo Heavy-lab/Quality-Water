@@ -24,12 +24,18 @@
       -webkit-tap-highlight-color: transparent; 
     }
 
+    html {
+      /* Creates a buffer space at the bottom of the viewport for focus scrolling */
+      scroll-padding-bottom: 280px;
+    }
+
     body { 
       background-color: #f1f5f9; 
       margin: 0; 
       padding: env(safe-area-inset-top, 12px) env(safe-area-inset-right, 12px) env(safe-area-inset-bottom, 12px) env(safe-area-inset-left, 12px); 
       color: #0f172a; 
       -webkit-text-size-adjust: 100%; 
+      transition: padding-bottom 0.25s ease-in-out;
     }
 
     .container {
@@ -398,6 +404,7 @@
     `;
     tbody.appendChild(tr);
     tr.querySelectorAll('textarea').forEach(autoResize);
+    initScrollFixForElements(tr.querySelectorAll('textarea, input'));
   }
 
   function updateObjectiveRowNumbers() {
@@ -436,6 +443,7 @@
     updateObjectiveRowNumbers();
     syncObjectiveNames();
     tr.querySelectorAll('textarea').forEach(autoResize);
+    initScrollFixForElements(tr.querySelectorAll('textarea, input, select'));
   }
 
   function removeObjectiveRow(btn) {
@@ -512,6 +520,7 @@
     } else {
       addParamRowToSample(sampleCount, "Turbidity (NTU)");
     }
+    initScrollFixForElements(block.querySelectorAll('textarea, input'));
   }
 
   function addParamRowToSample(sampleNum, defaultParam = "") {
@@ -532,6 +541,7 @@
     tbody.appendChild(tr);
     tr.querySelectorAll('textarea').forEach(autoResize);
     runExceedanceCheck();
+    initScrollFixForElements(tr.querySelectorAll('textarea, input'));
   }
 
   function removeSampleParamRow(btn) {
@@ -609,6 +619,7 @@
     `;
     grid.appendChild(card);
     card.querySelectorAll('textarea').forEach(autoResize);
+    initScrollFixForElements(card.querySelectorAll('textarea'));
   }
 
   function handlePhotoUpload(event) {
@@ -790,6 +801,30 @@
     addSampleBlock();
   }
 
+  // Scroll jump prevention focus binding helper
+  function initScrollFixForElements(elements) {
+    elements.forEach(input => {
+      input.addEventListener('focus', function() {
+        setTimeout(() => {
+          document.body.style.paddingBottom = '320px';
+          this.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }, 300);
+      });
+
+      input.addEventListener('blur', function() {
+        document.body.style.paddingBottom = '0px';
+      });
+    });
+  }
+
+  function initScrollFix() {
+    const textInputs = document.querySelectorAll('textarea, input[type="text"], input[type="number"], input[type="date"], select');
+    initScrollFixForElements(textInputs);
+  }
+
   window.onbeforeprint = preparePrintView;
 
   // Fix: Save initial window width to prevent height-only resize triggers (like keyboards)
@@ -799,6 +834,7 @@
     initSignatureCanvas();
     if (!loadSavedProgress() && document.querySelectorAll('.sample-block').length === 0) addSampleBlock();
     document.querySelectorAll('textarea').forEach(autoResize);
+    initScrollFix();
 
     setInterval(() => saveProgress(true), 15000);
     document.addEventListener("visibilitychange", () => {
