@@ -28,16 +28,6 @@ border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 position: relative; overflow: hidden;
 }
 
-/* Controls Header */
-.controls-header {
-background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 16px;
-display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
-}
-
-.controls-group {
-display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-}
-
 /* Print View Container (Hidden on Screen) */
 .print-text-block {
 display: none;
@@ -83,7 +73,7 @@ font-weight: bold; font-size: 0.95rem; border-radius: 4px; margin-top: 10px; mar
 
 label { font-size: 0.8rem; font-weight: 600; margin-bottom: 3px; color: #334155; }
 
-input[type="text"], input[type="number"], input[type="date"], select, textarea {
+input[type="text"], input[type="number"], input[type="date"], select {
 width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; background-color: #fff;
 -webkit-appearance: none; appearance: none;
 }
@@ -107,12 +97,37 @@ table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 th, td { border: 1px solid var(--border); padding: 5px 6px; text-align: left; vertical-align: middle; }
 th { background-color: var(--bg-light); font-weight: 600; }
 
+.yn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
+.yn-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; }
+.yn-item select { width: auto; }
+
+.controls-header {
+background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 16px;
+display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+}
+
+.controls-group {
+display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+
 .btn { background-color: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.82rem; text-align: center; text-decoration: none; display: inline-block; }
 .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
 .btn-danger { background-color: var(--danger); }
 .btn-secondary { background-color: #64748b; }
 .btn-success { background-color: #16a34a; }
 .btn:hover { opacity: 0.9; }
+
+.exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
+
+/* Signature Canvas Styling */
+.sig-container { border: 1px solid var(--border); border-radius: 4px; background: #fff; position: relative; height: 110px; touch-action: none; }
+.sig-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+.sig-tools { position: absolute; right: 4px; bottom: 4px; z-index: 10; }
+
+select[multiple] {
+min-height: 90px;
+padding: 4px;
+}
 
 .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
 .photo-card { border: 1px solid var(--border); padding: 6px; border-radius: 6px; background: #fafafa; display: flex; flex-direction: column; gap: 6px; position: relative; }
@@ -167,6 +182,12 @@ break-inside: avoid !important;
 margin-bottom: 14px;
 }
 
+.sample-block {
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+margin-bottom: 12px;
+}
+
 /* Hide form elements on print */
 input, textarea, select, .btn-delete-photo {
 display: none !important;
@@ -185,6 +206,7 @@ table .print-text-block {
 border-bottom: none !important;
 }
 
+.yn-item { border: none !important; border-bottom: 1px dotted #cbd5e1 !important; }
 .section-title { 
 background-color: #f1f5f9 !important; 
 color: #0f172a !important; 
@@ -193,6 +215,7 @@ page-break-after: avoid !important;
 break-after: avoid !important;
 }
 
+/* Prevent image and photo grid breaks across pages */
 .photo-grid {
 page-break-inside: avoid !important;
 break-inside: avoid !important;
@@ -212,6 +235,19 @@ object-fit: contain !important;
 page-break-inside: avoid !important;
 break-inside: avoid !important;
 }
+
+.sig-container { 
+border: none; 
+border-bottom: 1px solid #000; 
+height: 75px; 
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+}
+
+img {
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+}
 }
 </style>
 </head>
@@ -219,7 +255,7 @@ break-inside: avoid !important;
 
 <div class="container">
 
-<!-- Control Bar with Save & Master Template Actions -->
+<!-- Control Bar with Save & Master Template Actions (Added here so it doesn't interrupt your layout) -->
 <div class="controls-header no-print">
   <div class="controls-group">
     <button type="button" class="btn btn-success" onclick="saveReportData()">💾 Save Progress</button>
@@ -239,38 +275,6 @@ break-inside: avoid !important;
 <img id="headerLogoDisplay" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAHhwAAAmGCAYAAACn6ECvAAAACXBIWXMAAFxGAABcRgEUlENBAAAgAElEQVR4nOzdMQEAIAzAMMC/5yFjPRIFddA7MwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANj1tgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAIDP3h0LAAAAAAzyt57GjhIJAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAIDYu6Pbtu40jcOvAd9bU4E4BRxYW4G5pwF7K8js7bmxU0GyFcRzw9txByM3wNAVDAUWsFIFK1WgveDhkFJkW45p3f9KzwMcWFGM4AUSkPYXgz8AAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAA5ATG+QAAIABJARRlAAAAAAAAAAGi/AAM43AQA3oB35EAAAAASUVORK5CYII=" alt="Logo">
 </div>
 
-<!-- General Info Form -->
-<div class="section-block">
-  <div class="section-title">General Information</div>
-  <div class="grid">
-    <div class="form-group">
-      <label for="inspectorName">Inspector Name:</label>
-      <input type="text" id="inspectorName" class="saveable" oninput="autoSaveData()">
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group">
-      <label for="reportDate">Date:</label>
-      <input type="date" id="reportDate" class="saveable" oninput="autoSaveData()">
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group">
-      <label for="locationName">Location / Job Site:</label>
-      <select id="locationName" class="saveable" onchange="autoSaveData()">
-        <option value="">Select Location...</option>
-        <option value="OID">OID</option>
-        <option value="Keyes">Keyes</option>
-        <option value="Other">Other</option>
-      </select>
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group full-width">
-      <label for="generalNotes">General Site Notes:</label>
-      <textarea id="generalNotes" class="auto-expand saveable" oninput="autoSaveData()"></textarea>
-      <div class="print-text-block"></div>
-    </div>
-  </div>
-</div>
-
 <!-- Dynamic Photo Section Container -->
 <div class="section-block">
   <div class="section-title">Site Photos</div>
@@ -288,8 +292,21 @@ break-inside: avoid !important;
 let photoList = [];
 const STORAGE_KEY = 'water_quality_report_data';
 
+// Automatically bind the autosave to all text inputs, textareas, and selects on the page
+function setupAutoSaveListeners() {
+  const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
+  inputs.forEach(input => {
+    // If the element doesn't have an ID, we can't save it effectively
+    if(input.id) {
+      input.addEventListener('input', autoSaveData);
+      input.addEventListener('change', autoSaveData);
+    }
+  });
+}
+
 // Load initial data from localStorage on load
 window.addEventListener('DOMContentLoaded', () => {
+  setupAutoSaveListeners();
   loadSavedData();
 });
 
@@ -308,7 +325,7 @@ function handlePhotoUpload(event) {
     };
     reader.readAsDataURL(file);
   });
-  event.target.value = '';
+  event.target.value = ''; // Reset input
 }
 
 function deletePhoto(id) {
@@ -329,7 +346,7 @@ function renderPhotos() {
     card.innerHTML = `
       <button type="button" class="btn-delete-photo no-print" onclick="deletePhoto(${photo.id})">Delete</button>
       <img src="${photo.src}" alt="Site Photo ${index + 1}">
-      <input type="text" value="${photo.caption}" placeholder="Photo caption..." oninput="photoList[${index}].caption = this.value; autoSaveData(); syncPrintView();">
+      <input type="text" id="photo_caption_${photo.id}" value="${photo.caption}" placeholder="Photo caption..." oninput="photoList[${index}].caption = this.value; autoSaveData(); syncPrintView();">
       <div class="print-text-block">${photo.caption}</div>
     `;
     grid.appendChild(card);
@@ -338,6 +355,7 @@ function renderPhotos() {
 }
 
 function syncPrintView() {
+  // Syncs inputs with static printable blocks for your entire document
   document.querySelectorAll('input, select, textarea').forEach(input => {
     const printBlock = input.nextElementSibling;
     if (printBlock && printBlock.classList.contains('print-text-block')) {
@@ -346,17 +364,25 @@ function syncPrintView() {
   });
 }
 
+// Gathers all input data dynamically
 function getFormData() {
   const fieldData = {};
-  document.querySelectorAll('.saveable').forEach(field => {
-    fieldData[field.id] = field.value;
+  const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
+  
+  inputs.forEach(field => {
+    // Exclude dynamically generated photo captions from the general field save
+    if (field.id && !field.id.startsWith('photo_caption_')) {
+      fieldData[field.id] = field.type === 'checkbox' ? field.checked : field.value;
+    }
   });
+  
   return {
     fields: fieldData,
     photos: photoList
   };
 }
 
+// Populates data dynamically
 function setFormData(data) {
   if (!data) return;
   
@@ -364,7 +390,11 @@ function setFormData(data) {
     Object.keys(data.fields).forEach(id => {
       const field = document.getElementById(id);
       if (field) {
-        field.value = data.fields[id];
+        if (field.type === 'checkbox') {
+          field.checked = data.fields[id];
+        } else {
+          field.value = data.fields[id];
+        }
       }
     });
   }
@@ -404,7 +434,11 @@ function loadSavedData() {
 function clearReportData() {
   if (confirm("Clear all field values and photos? This cannot be undone.")) {
     localStorage.removeItem(STORAGE_KEY);
-    document.querySelectorAll('.saveable').forEach(field => field.value = '');
+    const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
+    inputs.forEach(field => {
+      if (field.type === 'checkbox') field.checked = false;
+      else field.value = '';
+    });
     photoList = [];
     renderPhotos();
     syncPrintView();
