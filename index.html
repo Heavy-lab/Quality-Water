@@ -7,229 +7,930 @@
     navigator.serviceWorker.register('sw.js');
   }
 </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Daily Water Quality Monitoring Report</title>
-<style>
-:root {
---primary: #1e3a8a;
---border: #cbd5e1;
---bg-light: #f8fafc;
---danger: #dc2626;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Daily Water Quality Monitoring Report</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --border: #cbd5e1;
+      --bg-light: #f8fafc;
+      --danger: #dc2626;
+    }
 
-* { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-body { background-color: #f1f5f9; margin: 0; padding: 12px; color: #0f172a; -webkit-text-size-adjust: 100%; }
+    body { background-color: #f1f5f9; margin: 0; padding: 12px; color: #0f172a; -webkit-text-size-adjust: 100%; }
 
-.container {
-max-width: 950px; margin: 0 auto; background: #ffffff; padding: 24px;
-border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-position: relative; overflow: hidden;
-}
+    .container {
+      max-width: 950px; margin: 0 auto; background: #ffffff; padding: 24px;
+      border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      position: relative; overflow: hidden;
+    }
 
-/* Print View Container (Hidden on Screen) */
-.print-text-block {
-display: none;
-white-space: pre-wrap;
-word-wrap: break-word;
-overflow-wrap: anywhere;
-font-size: 0.82rem;
-width: 100%;
-}
+    /* Print View Container (Hidden on Screen) */
+    .print-text-block {
+      display: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+      font-size: 0.82rem;
+      width: 100%;
+    }
 
-/* Header Container */
-.print-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 12px;
-border-bottom: 2px solid var(--primary);
-padding-bottom: 8px;
-}
-.print-header .header-title {
-font-size: 1.4rem;
-font-weight: bold;
-color: var(--primary);
-}
-.print-header img {
-max-height: 55px;
-max-width: 180px;
-object-fit: contain;
-}
+    /* Header Container */
+    .print-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
+    }
+    .print-header .header-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .print-header img {
+      max-height: 55px;
+      max-width: 180px;
+      object-fit: contain;
+    }
 
-.section-block {
-margin-bottom: 18px;
-}
+    .section-block {
+      margin-bottom: 18px;
+    }
 
-.section-title {
-background-color: var(--primary); color: white; padding: 6px 10px;
-font-weight: bold; font-size: 0.95rem; border-radius: 4px; margin-top: 10px; margin-bottom: 10px;
-}
+    .section-title {
+      background-color: var(--primary); color: white; padding: 6px 10px;
+      font-weight: bold; font-size: 0.95rem; border-radius: 4px; margin-top: 10px; margin-bottom: 10px;
+    }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-.form-group { display: flex; flex-direction: column; }
-.form-group.full-width { grid-column: 1 / -1; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group.full-width { grid-column: 1 / -1; }
 
-label { font-size: 0.8rem; font-weight: 600; margin-bottom: 3px; color: #334155; }
+    label { font-size: 0.8rem; font-weight: 600; margin-bottom: 3px; color: #334155; }
 
-input[type="text"], input[type="number"], input[type="date"], select {
-width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; background-color: #fff;
--webkit-appearance: none; appearance: none;
-}
+    input[type="text"], input[type="number"], input[type="date"], select {
+      width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; background-color: #fff;
+      -webkit-appearance: none; appearance: none;
+    }
 
-.auto-expand {
-width: 100%;
-min-height: 38px;
-padding: 6px 8px;
-border: 1px solid var(--border);
-border-radius: 4px;
-font-size: 0.82rem;
-background-color: #fff;
-resize: none;
-overflow: hidden;
-white-space: pre-wrap;
-word-wrap: break-word;
-}
+    .auto-expand {
+      width: 100%;
+      min-height: 38px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.82rem;
+      background-color: #fff;
+      resize: none;
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
 
-.table-container { overflow-x: auto; margin-top: 6px; margin-bottom: 6px; -webkit-overflow-scrolling: touch; }
-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-th, td { border: 1px solid var(--border); padding: 5px 6px; text-align: left; vertical-align: middle; }
-th { background-color: var(--bg-light); font-weight: 600; }
+    .table-container { overflow-x: auto; margin-top: 6px; margin-bottom: 6px; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th, td { border: 1px solid var(--border); padding: 5px 6px; text-align: left; vertical-align: middle; }
+    th { background-color: var(--bg-light); font-weight: 600; }
 
-.yn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
-.yn-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; }
-.yn-item select { width: auto; }
+    .yn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
+    .yn-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; }
+    .yn-item select { width: auto; }
 
-.controls-header {
-background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 16px;
-display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
-}
+    .controls-header {
+      background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 16px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+    }
 
-.btn { background-color: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.82rem; text-align: center; text-decoration: none; display: inline-block; }
-.btn-sm { padding: 4px 8px; font-size: 0.75rem; }
-.btn-danger { background-color: var(--danger); }
-.btn-secondary { background-color: #64748b; }
-.btn-success { background-color: #16a34a; }
-.btn:hover { opacity: 0.9; }
+    .btn { background-color: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.82rem; text-align: center; text-decoration: none; display: inline-block; }
+    .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
+    .btn-danger { background-color: var(--danger); }
+    .btn-secondary { background-color: #64748b; }
+    .btn-success { background-color: #16a34a; }
+    .btn:hover { opacity: 0.9; }
 
-.exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
+    .exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
 
-/* Signature Canvas Styling */
-.sig-container { border: 1px solid var(--border); border-radius: 4px; background: #fff; position: relative; height: 110px; touch-action: none; }
-.sig-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
-.sig-tools { position: absolute; right: 4px; bottom: 4px; z-index: 10; }
+    /* Signature Canvas Styling */
+    .sig-container { border: 1px solid var(--border); border-radius: 4px; background: #fff; position: relative; height: 110px; touch-action: none; }
+    .sig-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+    .sig-tools { position: absolute; right: 4px; bottom: 4px; z-index: 10; }
 
-select[multiple] {
-min-height: 90px;
-padding: 4px;
-}
+    select[multiple] {
+      min-height: 90px;
+      padding: 4px;
+    }
 
-.photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
-.photo-card { border: 1px solid var(--border); padding: 6px; border-radius: 6px; background: #fafafa; display: flex; flex-direction: column; gap: 6px; }
-.photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #eaefe9; border-radius: 4px; }
+    .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
+    .photo-card { border: 1px solid var(--border); padding: 6px; border-radius: 6px; background: #fafafa; display: flex; flex-direction: column; gap: 6px; }
+    .photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #eaefe9; border-radius: 4px; }
 
-/* Print & PDF Export Formatting */
-@media print {
-@page {
-margin: 10mm 8mm;
-}
+    /* Print & PDF Export Formatting */
+    @media print {
+      @page {
+        margin: 10mm 8mm;
+      }
 
-body { background-color: white; padding: 0; font-size: 9pt; }
-.container { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; overflow: visible; }
-.no-print { display: none !important; }
+      body { background-color: white; padding: 0; font-size: 9pt; }
+      .container { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; overflow: visible; }
+      .no-print { display: none !important; }
 
-.print-header { 
-display: flex !important; 
-page-break-after: avoid; 
-break-after: avoid;
-}
+      .print-header { display: flex !important; page-break-after: avoid; }
 
-.section-block {
-page-break-inside: avoid !important;
-break-inside: avoid !important;
-margin-bottom: 14px;
-}
+      .section-block {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 14px;
+      }
 
-.sample-block {
-page-break-inside: avoid !important;
-break-inside: avoid !important;
-margin-bottom: 12px;
-}
+      .sample-block {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 12px;
+      }
 
-/* Hide form elements on print */
-input, textarea, select {
-display: none !important;
-}
+      /* Hide form elements on print */
+      input, textarea, select {
+        display: none !important;
+      }
 
-/* Show full static text blocks on print */
-.print-text-block {
-display: block !important;
-border-bottom: 1px solid #cbd5e1;
-padding-bottom: 2px;
-min-height: 16px;
-font-size: 9pt !important;
-}
+      /* Show full static text blocks on print */
+      .print-text-block {
+        display: block !important;
+        border-bottom: 1px solid #cbd5e1;
+        padding-bottom: 2px;
+        min-height: 16px;
+        font-size: 9pt !important;
+      }
 
-table .print-text-block {
-border-bottom: none !important;
-}
+      table .print-text-block {
+        border-bottom: none !important;
+      }
 
-.yn-item { border: none !important; border-bottom: 1px dotted #cbd5e1 !important; }
-.section-title { 
-background-color: #f1f5f9 !important; 
-color: #0f172a !important; 
-border: 1px solid #cbd5e1; 
-page-break-after: avoid !important;
-break-after: avoid !important;
-}
-
-/* Prevent image and photo grid breaks across pages */
-.photo-grid {
-page-break-inside: avoid !important;
-break-inside: avoid !important;
-}
-
-.photo-card { 
-page-break-inside: avoid !important; 
-break-inside: avoid !important; 
-border: 1px solid #cbd5e1; 
-}
-
-.photo-card img { 
-max-height: 220px !important; 
-width: 100% !important;
-height: auto !important;
-object-fit: contain !important; 
-page-break-inside: avoid !important;
-break-inside: avoid !important;
-}
-
-.sig-container { 
-border: none; 
-border-bottom: 1px solid #000; 
-height: 75px; 
-page-break-inside: avoid !important;
-break-inside: avoid !important;
-}
-
-img {
-page-break-inside: avoid !important;
-break-inside: avoid !important;
-}
-}
-</style>
+      .yn-item { border: none !important; border-bottom: 1px dotted #cbd5e1 !important; }
+      .section-title { background-color: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1; page-break-after: avoid; }
+      
+      .photo-card { page-break-inside: avoid; border: 1px solid #cbd5e1; }
+      .photo-card img { max-height: 220px !important; object-fit: contain !important; }
+      .sig-container { border: none; border-bottom: 1px solid #000; height: 75px; }
+    }
+  </style>
 </head>
 <body>
 
 <div class="container">
 
-<!-- Header Section -->
-<div class="print-header">
-<div class="header-title">Daily Water Quality Monitoring Report</div>
-<img id="headerLogoDisplay" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAHhwAAAmGCAYAAACn6ECvAAAACXBIWXMAAFxGAABcRgEUlENBAAAgAElEQVR4nOzdMQEAIAzAMMC/5yFjPRIFddA7MwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANj1tgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAIDP3h0LAAAAAAzyt57GjhIJAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAP9ZUi8AACAASURBVAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGYu+OBQAAAAAG+VtPY0eJJBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAIDYu6Pbtu40jcOvAd9bU4E4BRxYW4G5pwF7K8js7bmxU0GyFcRzw9txByM3wNAVDAUWsFIFK1WgveDhkFJkW45p3f9KzwMcWFGM4AUSkPYXgz8AAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAA5ATG+QAAIABJARRlAAAAAAAAAAGi/AAM43AQA3oB35EAAAAASUVORK5CYII=" alt="Logo">
+  <!-- Header Section -->
+  <div class="print-header">
+    <div class="header-title">Daily Water Quality Monitoring Report</div>
+    <img id="headerLogoDisplay" src="" alt="Company Logo" style="display: none;">
+  </div>
+  
+  <div class="form-content">
+    
+    <div class="controls-header no-print">
+      <div>
+        <label for="logoInput"><strong>Company Logo (Header):</strong></label><br>
+        <input type="file" id="logoInput" accept="image/*" onchange="previewLogo(event)">
+      </div>
+      <div style="display:flex; gap: 6px; flex-wrap: wrap;">
+        <button class="btn btn-success" type="button" onclick="saveProjectMaster()">Save Master Template</button>
+        <button class="btn btn-secondary" type="button" onclick="clearToBlankTemplate()">Clear to Blank Template</button>
+        <button class="btn" type="button" onclick="triggerPrintOrPDF()">Print / Save PDF</button>
+      </div>
+    </div>
+
+    <!-- PART I -->
+    <div class="section-block">
+      <div class="section-title">Part I. General Information</div>
+      
+      <div class="grid">
+        <div class="form-group full-width">
+          <label>Project Name:</label>
+          <textarea class="auto-expand" id="projName" rows="1" oninput="autoResize(this)">05-1G9504 DRAINAGE SYSTEM UPGRADES AND SLOPE STABILIZATION</textarea>
+        </div>
+        <div class="form-group">
+          <label>Project Number:</label>
+          <textarea class="auto-expand" id="projNum" rows="1" oninput="autoResize(this)">05-1G9504 | 05-SCr-9-9.0/25.5</textarea>
+        </div>
+        <div class="form-group">
+          <label>401 WDID Number:</label>
+          <textarea class="auto-expand" id="wdidNum" rows="1" oninput="autoResize(this)">WPCP (2022)</textarea>
+        </div>
+        <div class="form-group full-width">
+          <label>Project Address:</label>
+          <textarea class="auto-expand" id="projAddr" rows="1" oninput="autoResize(this)">Location 15 – On Route 9 at Post Mile 17.89 Near Ben Lomond, Santa Cruz County, CA</textarea>
+        </div>
+        <div class="form-group">
+          <label>Approximate Coordinates:</label>
+          <textarea class="auto-expand" id="projCoords" rows="1" oninput="autoResize(this)">37.188745, -122.143153</textarea>
+        </div>
+        <div class="form-group">
+          <label>Monitoring Performed By:</label>
+          <textarea class="auto-expand" id="monBy" rows="1" oninput="autoResize(this)">Tully Consulting Group</textarea>
+        </div>
+        <div class="form-group">
+          <label>Inspector Name & Title:</label>
+          <textarea class="auto-expand" id="inspName" rows="1" oninput="autoResize(this)">Inspector</textarea>
+        </div>
+        
+        <!-- Interactive Signature Canvas -->
+        <div class="form-group">
+          <label>Inspector Signature (Draw Below):</label>
+          <div class="sig-container" id="sigContainer">
+            <canvas id="sigCanvas" class="sig-canvas"></canvas>
+            <div class="sig-tools no-print">
+              <button class="btn btn-sm btn-secondary" type="button" onclick="clearSignature()">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group"><label>Date of Sampling:</label><input type="date" id="dateSampling"></div>
+        <div class="form-group"><label>Date Report Completed:</label><input type="date" id="dateCompleted"></div>
+      </div>
+
+      <p style="margin-top:10px; margin-bottom:4px;"><strong>Weather Information</strong></p>
+      <div class="grid">
+        <div class="form-group"><label>Antecedent Conditions (48 hrs):</label><textarea class="auto-expand" id="weatherAnt" rows="1" oninput="autoResize(this)">Sunny</textarea></div>
+        <div class="form-group"><label>Current Weather:</label><textarea class="auto-expand" id="weatherCur" rows="1" oninput="autoResize(this)">Sunny</textarea></div>
+        <div class="form-group"><label>Precipitation Forecast (NOAA):</label><textarea class="auto-expand" id="weatherForecast" rows="1" oninput="autoResize(this)">None Predicted</textarea></div>
+        <div class="form-group"><label>Wind Condition:</label><textarea class="auto-expand" id="weatherWind" rows="1" oninput="autoResize(this)">< 5 mph</textarea></div>
+      </div>
+
+      <div class="form-group full-width" style="margin-top: 6px;">
+        <label>Exception Documentation (required if sampling was not conducted):</label>
+        <textarea class="auto-expand" id="exceptionDoc" rows="1" oninput="autoResize(this)" placeholder="Enter exception explanation or N/A">N/A</textarea>
+      </div>
+
+      <p style="margin-top:10px; margin-bottom:4px;"><strong>Site Activity (Hold Ctrl/Cmd to select multiple):</strong></p>
+      <div class="form-group full-width">
+        <select id="siteActivitySelect" multiple>
+          <option value="Installation of Clear Water Diversion">Installation of Clear Water Diversion</option>
+          <option value="Active Diversion">Active Diversion</option>
+          <option value="Background Sampling">Background Sampling</option>
+          <option value="Removal of Clear Water Diversion">Removal of Clear Water Diversion</option>
+          <option value="Other In-Water Work">Other In-Water Work</option>
+        </select>
+      </div>
+      <div class="form-group full-width" style="margin-top: 4px;">
+        <label>Other Site Activity Details:</label>
+        <textarea class="auto-expand" id="saOther" rows="1" oninput="autoResize(this)"></textarea>
+      </div>
+    </div>
+
+    <!-- PART II -->
+    <div class="section-block">
+      <div class="section-title">Part II. Visual Inspection Report</div>
+      <p style="margin-bottom:4px;"><strong>Observations of Receiving Water for Presence of Contaminants:</strong></p>
+      
+      <div class="yn-grid">
+        <div class="yn-item"><span>Floating/Suspended Materials</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Surface Sheen</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Discoloration</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Turbidity</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Odors</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Soil, Silt, and Sand</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Bark, Sawdust, Slash</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Rubbish and Debris</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Cement / Washings</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Oil & Petroleum</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Welding Slag</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+        <div class="yn-item"><span>Other Organic/Earthen</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+      </div>
+
+      <div class="form-group full-width" style="margin-top: 6px;">
+        <label>Sources of Observed Pollutants / Details:</label>
+        <textarea class="auto-expand" id="pollutantDetails" rows="1" oninput="autoResize(this)" placeholder="Describe sources if contaminants were observed"></textarea>
+      </div>
+
+      <div class="form-group full-width" style="margin-top: 6px;">
+        <label>Additional Comments:</label>
+        <textarea class="auto-expand" id="part2Comments" rows="1" oninput="autoResize(this)" placeholder="Enter additional comments..."></textarea>
+      </div>
+    </div>
+
+    <!-- PART III -->
+    <div class="section-block">
+      <div class="section-title">Part III. Sampling Locations</div>
+      <div class="table-container">
+        <table id="locationsTable">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Location</th>
+              <th style="width: 30%;">Coordinates</th>
+              <th style="width: 35%;">Description</th>
+              <th class="no-print" style="width: 10%;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Upstream</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">37.188633, -122.143450</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">15 feet from diversion pipe.</textarea></td>
+              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
+            </tr>
+            <tr>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Effluent</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">N/A</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">N/A</textarea></td>
+              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
+            </tr>
+            <tr>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Downstream</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">37.188834, -122.143041</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">35 feet diversion pipe.</textarea></td>
+              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm no-print" type="button" onclick="addLocationRow()">+ Add Location</button>
+    </div>
+
+    <!-- WATER QUALITY OBJECTIVES -->
+    <div class="section-block">
+      <div class="section-title">Water Quality Objectives</div>
+      <div class="table-container">
+        <table id="objectivesTable">
+          <thead>
+            <tr>
+              <th style="width: 5%;">#</th>
+              <th style="width: 25%;">Quality Characteristic</th>
+              <th style="width: 15%;">Test Method</th>
+              <th style="width: 15%;">Detection Limit (min)</th>
+              <th style="width: 15%;">Requirement</th>
+              <th style="width: 20%;">Exceedance Threshold</th>
+              <th class="no-print" style="width: 5%;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: center; font-weight: bold;" class="row-num">1</td>
+              <td><textarea class="auto-expand obj-param" rows="1" oninput="autoResize(this); syncObjectiveNames(); runExceedanceCheck();">Turbidity (NTU)</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Field Meter</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">1 NTU</textarea></td>
+              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">< 20% Increase</textarea></td>
+              <td>
+                <select class="obj-type" onchange="toggleVal2(this); runExceedanceCheck();">
+                  <option value="pct_gt">Downstream > Upstream by %</option>
+                  <option value="val_diff_gt">Downstream > Upstream by Value</option>
+                  <option value="any_sample_pct">Any Sample Over %</option>
+                  <option value="any_sample_val">Any Sample Over Value</option>
+                  <option value="val_gt">Value Greater Than</option>
+                  <option value="val_eq">Value Equals</option>
+                  <option value="val_between">Outside Range (Min/Max)</option>
+                </select>
+                <input type="number" step="any" class="obj-val1" value="20" placeholder="Val or %" style="margin-top:2px;" onchange="runExceedanceCheck()">
+                <input type="number" step="any" class="obj-val2" placeholder="Max Val" style="display:none; margin-top:2px;" onchange="runExceedanceCheck()">
+              </td>
+              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeObjectiveRow(this)">Remove</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm no-print" type="button" onclick="addObjectiveRow()">+ Add Objective</button>
+    </div>
+
+    <!-- PART IV -->
+    <div class="section-block">
+      <div class="section-title">Part IV. Water Quality Sampling and Analysis Log</div>
+      <div id="sampleLogsContainer"></div>
+      <button class="btn btn-sm no-print" type="button" onclick="addSampleBlock()">+ Add New Sample Set</button>
+
+      <p style="font-size: 0.78rem; color: #64748b; margin-top: 6px;">
+        * Describe any in-water work, sources of exceedances, or corrective measures taken in response to an exceedance.
+      </p>
+    </div>
+
+    <!-- PHOTO LOG -->
+    <div class="section-block">
+      <div class="section-title">Photo Documentation Log</div>
+      <div class="no-print" style="margin-bottom: 8px;">
+        <label>Attach Site Photos:</label><br>
+        <input type="file" id="photoUpload" accept="image/*" multiple onchange="handlePhotoUpload(event)">
+      </div>
+      <div class="photo-grid" id="photoGrid"></div>
+    </div>
+
+  </div>
 </div>
 
-</div>
+<script>
+  let sampleCount = 0;
+  let logoDataUrl = "";
+
+  function autoResize(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  function previewLogo(event) {
+    const file = event.target.files[0];
+    const headerImg = document.getElementById('headerLogoDisplay');
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        logoDataUrl = e.target.result;
+        headerImg.src = logoDataUrl;
+        headerImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      logoDataUrl = "";
+      headerImg.src = '';
+      headerImg.style.display = 'none';
+    }
+  }
+
+  function removeRow(btn) { btn.closest('tr').remove(); }
+
+  function addLocationRow(loc="", coord="", desc="") {
+    const tbody = document.querySelector('#locationsTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)" placeholder="Location Name">${loc}</textarea></td>
+      <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)" placeholder="Coordinates">${coord}</textarea></td>
+      <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)" placeholder="Description">${desc}</textarea></td>
+      <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelectorAll('textarea').forEach(autoResize);
+  }
+
+  function updateObjectiveRowNumbers() {
+    const rows = document.querySelectorAll('#objectivesTable tbody tr');
+    rows.forEach((r, idx) => {
+      const numCell = r.querySelector('.row-num');
+      if (numCell) numCell.textContent = idx + 1;
+    });
+  }
+
+  function addObjectiveRow(param="", method="", limit="", req="", type="pct_gt", val1="20", val2="") {
+    const tbody = document.querySelector('#objectivesTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align: center; font-weight: bold;" class="row-num"></td>
+      <td><textarea class="auto-expand obj-param" rows="1" oninput="autoResize(this); syncObjectiveNames(); runExceedanceCheck();" placeholder="Parameter">${param}</textarea></td>
+      <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)" placeholder="Method">${method}</textarea></td>
+      <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)" placeholder="Limit">${limit}</textarea></td>
+      <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)" placeholder="Requirement">${req}</textarea></td>
+      <td>
+        <select class="obj-type" onchange="toggleVal2(this); runExceedanceCheck();">
+          <option value="pct_gt" ${type === 'pct_gt' ? 'selected' : ''}>Downstream > Upstream by %</option>
+          <option value="val_diff_gt" ${type === 'val_diff_gt' ? 'selected' : ''}>Downstream > Upstream by Value</option>
+          <option value="any_sample_pct" ${type === 'any_sample_pct' ? 'selected' : ''}>Any Sample Over %</option>
+          <option value="any_sample_val" ${type === 'any_sample_val' ? 'selected' : ''}>Any Sample Over Value</option>
+          <option value="val_gt" ${type === 'val_gt' ? 'selected' : ''}>Value Greater Than</option>
+          <option value="val_eq" ${type === 'val_eq' ? 'selected' : ''}>Value Equals</option>
+          <option value="val_between" ${type === 'val_between' ? 'selected' : ''}>Outside Range (Min/Max)</option>
+        </select>
+        <input type="number" step="any" class="obj-val1" value="${val1}" placeholder="Val or %" style="margin-top:2px;" onchange="runExceedanceCheck()">
+        <input type="number" step="any" class="obj-val2" value="${val2}" placeholder="Max Val" style="${type === 'val_between' ? 'display:block;' : 'display:none;'} margin-top:2px;" onchange="runExceedanceCheck()">
+      </td>
+      <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeObjectiveRow(this)">Remove</button></td>
+    `;
+    tbody.appendChild(tr);
+    updateObjectiveRowNumbers();
+    syncObjectiveNames();
+    tr.querySelectorAll('textarea').forEach(autoResize);
+  }
+
+  function removeObjectiveRow(btn) {
+    btn.closest('tr').remove();
+    updateObjectiveRowNumbers();
+    syncObjectiveNames();
+    runExceedanceCheck();
+  }
+
+  function toggleVal2(select) {
+    const val2 = select.parentNode.querySelector('.obj-val2');
+    val2.style.display = select.value === 'val_between' ? 'block' : 'none';
+  }
+
+  function syncObjectiveNames() {
+    const objRows = document.querySelectorAll('#objectivesTable tbody tr');
+    const sampleBlocks = document.querySelectorAll('.sample-block');
+
+    sampleBlocks.forEach(block => {
+      const paramRows = block.querySelectorAll('.sample-param-tbody tr.param-row');
+      paramRows.forEach((pRow, idx) => {
+        if (objRows[idx]) {
+          const nameInput = pRow.querySelector('.param-name-input');
+          const objName = objRows[idx].querySelector('.obj-param').value;
+          if (nameInput && objName) {
+            nameInput.value = objName;
+            autoResize(nameInput);
+          }
+        }
+      });
+    });
+  }
+
+  function addSampleBlock() {
+    sampleCount++;
+    const container = document.getElementById('sampleLogsContainer');
+    const block = document.createElement('div');
+    block.className = 'sample-block';
+    block.style.marginBottom = '14px';
+    block.id = `sample-block-${sampleCount}`;
+    
+    block.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin: 4px 0;">
+        <strong>Sample #${sampleCount}</strong>
+        <button class="btn btn-sm btn-danger no-print" type="button" onclick="this.closest('.sample-block').remove(); runExceedanceCheck();">Remove Sample Set</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 5%;">Row</th>
+              <th style="width: 25%;">Parameter</th>
+              <th style="width: 17%;">Downstream Result</th>
+              <th style="width: 17%;">Effluent Result</th>
+              <th style="width: 17%;">Upstream Result</th>
+              <th style="width: 13%;">Exceedance?</th>
+              <th class="no-print" style="width: 6%;">Action</th>
+            </tr>
+          </thead>
+          <tbody class="sample-param-tbody">
+            <tr class="time-row" style="background-color: #f8fafc;">
+              <td style="text-align:center; font-weight:bold;">Time</td>
+              <td><strong>Time (HHMM)</strong></td>
+              <td><input type="text" class="ds-time" placeholder="HHMM"></td>
+              <td><input type="text" class="eff-time" placeholder="HHMM"></td>
+              <td><input type="text" class="us-time" placeholder="HHMM"></td>
+              <td style="text-align:center;">-</td>
+              <td class="no-print"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm no-print" type="button" onclick="addParamRowToSample(${sampleCount})">+ Add Parameter</button>
+      <div class="form-group full-width" style="margin-top: 6px;">
+        <label>Sample #${sampleCount} Comments *</label>
+        <textarea class="auto-expand sample-comment" rows="1" oninput="autoResize(this)" placeholder="Describe in-water work, exceedance causes, or corrective measures..."></textarea>
+      </div>
+    `;
+    container.appendChild(block);
+
+    const objRows = document.querySelectorAll('#objectivesTable tbody tr');
+    if (objRows.length > 0) {
+      objRows.forEach((oRow) => {
+        const pName = oRow.querySelector('.obj-param').value;
+        addParamRowToSample(sampleCount, pName);
+      });
+    } else {
+      addParamRowToSample(sampleCount, "Turbidity (NTU)");
+    }
+  }
+
+  function addParamRowToSample(sampleNum, defaultParam = "") {
+    const tbody = document.querySelector(`#sample-block-${sampleNum} .sample-param-tbody`);
+    const rowIndex = tbody.querySelectorAll('tr.param-row').length + 1;
+    const tr = document.createElement('tr');
+    tr.className = 'param-row';
+    
+    tr.innerHTML = `
+      <td style="text-align:center; font-weight:bold;" class="param-row-idx">Row ${rowIndex}</td>
+      <td><textarea class="auto-expand param-name-input" rows="1" oninput="autoResize(this); runExceedanceCheck()">${defaultParam}</textarea></td>
+      <td><input type="number" step="any" class="ds-input" oninput="runExceedanceCheck()"></td>
+      <td><input type="number" step="any" class="eff-input" oninput="runExceedanceCheck()"></td>
+      <td><input type="number" step="any" class="us-input" oninput="runExceedanceCheck()"></td>
+      <td class="exceedance-cell" style="text-align:center;">-</td>
+      <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeSampleParamRow(this)">Remove</button></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelectorAll('textarea').forEach(autoResize);
+    runExceedanceCheck();
+  }
+
+  function removeSampleParamRow(btn) {
+    const tbody = btn.closest('tbody');
+    btn.closest('tr').remove();
+    tbody.querySelectorAll('tr.param-row').forEach((r, idx) => {
+      r.querySelector('.param-row-idx').textContent = `Row ${idx + 1}`;
+    });
+    runExceedanceCheck();
+  }
+
+  function runExceedanceCheck() {
+    const objRows = document.querySelectorAll('#objectivesTable tbody tr');
+    
+    const objectivesMap = {};
+    const rowObjectives = [];
+
+    objRows.forEach(row => {
+      const pName = row.querySelector('.obj-param').value.trim().toLowerCase();
+      const type = row.querySelector('.obj-type').value;
+      const val1 = parseFloat(row.querySelector('.obj-val1').value);
+      const val2 = parseFloat(row.querySelector('.obj-val2').value);
+      const rule = { type, val1, val2 };
+      
+      rowObjectives.push(rule);
+      if (pName) objectivesMap[pName] = rule;
+    });
+
+    const sampleBlocks = document.querySelectorAll('.sample-block');
+    sampleBlocks.forEach(block => {
+      const rows = block.querySelectorAll('.sample-param-tbody tr.param-row');
+      rows.forEach((row, idx) => {
+        const pName = row.querySelector('.param-name-input').value.trim().toLowerCase();
+        const ds = parseFloat(row.querySelector('.ds-input').value);
+        const eff = parseFloat(row.querySelector('.eff-input').value);
+        const us = parseFloat(row.querySelector('.us-input').value);
+        const cell = row.querySelector('.exceedance-cell');
+
+        const obj = objectivesMap[pName] || rowObjectives[idx];
+
+        if (!obj) {
+          cell.innerHTML = "-";
+          return;
+        }
+
+        let isExceeded = false;
+        let displayVal = "";
+
+        if (obj.type === 'pct_gt' && !isNaN(ds) && !isNaN(us) && us > 0) {
+          const pctIncrease = ((ds - us) / us) * 100;
+          if (pctIncrease > obj.val1) {
+            isExceeded = true;
+            displayVal = `+${pctIncrease.toFixed(1)}%`;
+          }
+        } 
+        else if (obj.type === 'val_diff_gt' && !isNaN(ds) && !isNaN(us)) {
+          const diff = ds - us;
+          if (diff > obj.val1) {
+            isExceeded = true;
+            displayVal = `+${diff.toFixed(2)}`;
+          }
+        }
+        else if (obj.type === 'any_sample_pct' && !isNaN(us) && us > 0) {
+          const results = [ds, eff].filter(v => !isNaN(v));
+          for (let val of results) {
+            const pct = ((val - us) / us) * 100;
+            if (pct > obj.val1) {
+              isExceeded = true;
+              displayVal = `+${pct.toFixed(1)}%`;
+              break;
+            }
+          }
+        }
+        else if (obj.type === 'any_sample_val') {
+          const results = [ds, eff, us].filter(v => !isNaN(v));
+          for (let val of results) {
+            if (val > obj.val1) {
+              isExceeded = true;
+              displayVal = `${val} (> ${obj.val1})`;
+              break;
+            }
+          }
+        }
+        else if (obj.type === 'val_gt' && !isNaN(ds) && ds > obj.val1) {
+          isExceeded = true;
+          displayVal = `${ds} (> ${obj.val1})`;
+        } 
+        else if (obj.type === 'val_eq' && !isNaN(ds) && ds === obj.val1) {
+          isExceeded = true;
+          displayVal = `${ds}`;
+        } 
+        else if (obj.type === 'val_between' && !isNaN(ds) && (ds < obj.val1 || ds > obj.val2)) {
+          isExceeded = true;
+          displayVal = `${ds} (Outside ${obj.val1}-${obj.val2})`;
+        }
+
+        if (isExceeded) {
+          cell.innerHTML = `<span class="exceedance-badge">Y (${displayVal})</span>`;
+        } else {
+          cell.innerHTML = "N";
+        }
+      });
+    });
+  }
+
+  function handlePhotoUpload(event) {
+    const files = event.target.files;
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = '';
+
+    Array.from(files).forEach((file, idx) => {
+      const imgUrl = URL.createObjectURL(file);
+      const card = document.createElement('div');
+      card.className = 'photo-card';
+      card.innerHTML = `
+        <img src="${imgUrl}" alt="Site Photo ${idx + 1}">
+        <textarea class="auto-expand photo-comment" rows="1" oninput="autoResize(this)" placeholder="Photo ${idx + 1} Description / Location Comments..."></textarea>
+      `;
+      grid.appendChild(card);
+
+      const reader = new FileReader();
+      reader.onload = e => { card.querySelector('img').setAttribute('data-saved-src', e.target.result); };
+      reader.readAsDataURL(file);
+
+      card.querySelectorAll('textarea').forEach(autoResize);
+    });
+  }
+
+  let canvas, ctx, drawing = false;
+
+  function initSignatureCanvas() {
+    canvas = document.getElementById('sigCanvas');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    
+    canvas.width = canvas.parentElement.clientWidth || 300;
+    canvas.height = canvas.parentElement.clientHeight || 110;
+
+    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+
+    canvas.addEventListener('pointerdown', startDraw);
+    canvas.addEventListener('pointermove', draw);
+    canvas.addEventListener('pointerup', stopDraw);
+    canvas.addEventListener('pointercancel', stopDraw);
+  }
+
+  function getPointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    drawing = true;
+    const pos = getPointerPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPointerPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stopDraw(e) {
+    if (drawing) {
+      drawing = false;
+      if (e && e.pointerId) canvas.releasePointerCapture(e.pointerId);
+    }
+  }
+
+  function clearSignature() {
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.removeAttribute('data-saved-sig');
+    }
+  }
+
+  function preparePrintView() {
+    // Remove previous print text blocks if re-printing
+    document.querySelectorAll('.print-text-block').forEach(el => el.remove());
+
+    // Convert inputs and textareas into full-text printable divs
+    document.querySelectorAll('input, textarea').forEach(input => {
+      const val = input.value || '';
+      const div = document.createElement('div');
+      div.className = 'print-text-block';
+      div.textContent = val;
+      input.parentNode.insertBefore(div, input.nextSibling);
+    });
+
+    // Handle dropdown select elements
+    document.querySelectorAll('select').forEach(select => {
+      const div = document.createElement('div');
+      div.className = 'print-text-block';
+
+      if (select.multiple) {
+        const selected = Array.from(select.selectedOptions).map(opt => opt.value);
+        div.textContent = selected.length > 0 ? selected.join(', ') : 'None Selected';
+      } else {
+        div.textContent = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : '';
+      }
+
+      select.parentNode.insertBefore(div, select.nextSibling);
+    });
+  }
+
+  function saveProjectMaster() {
+    if (canvas) {
+      const sigData = canvas.toDataURL();
+      canvas.setAttribute('data-saved-sig', sigData);
+    }
+
+    document.querySelectorAll('input').forEach(input => {
+      if (input.type === 'checkbox') {
+        if (input.checked) input.setAttribute('checked', 'checked');
+        else input.removeAttribute('checked');
+      } else {
+        input.setAttribute('value', input.value);
+      }
+    });
+
+    document.querySelectorAll('textarea').forEach(ta => {
+      ta.textContent = ta.value;
+    });
+
+    document.querySelectorAll('select').forEach(sel => {
+      Array.from(sel.options).forEach(opt => {
+        if (opt.selected) opt.setAttribute('selected', 'selected');
+        else opt.removeAttribute('selected');
+      });
+    });
+
+    const currentHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    const blob = new Blob([currentHtml], { type: "text/html;charset=utf-8" });
+    const projNameStr = document.getElementById('projName').value || "Master_Template";
+    const fileName = `Master_Template_${projNameStr.replace(/[^a-z0-9]/gi, '_')}.html`;
+
+    if (navigator.canShare && window.File) {
+      try {
+        const file = new File([blob], fileName, { type: "text/html" });
+        if (navigator.share) {
+          navigator.share({ files: [file], title: fileName });
+          return;
+        }
+      } catch (err) { }
+    }
+
+    const a = document.createElement("a");
+    a.download = fileName;
+    a.href = URL.createObjectURL(blob);
+    a.click();
+  }
+
+  function clearToBlankTemplate() {
+    if (!confirm("Clear all project information and reset to a blank master template?")) return;
+
+    document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea').forEach(i => {
+      i.value = '';
+      i.textContent = '';
+    });
+    document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+
+    document.querySelector('#locationsTable tbody').innerHTML = '';
+    document.querySelector('#objectivesTable tbody').innerHTML = '';
+    document.getElementById('sampleLogsContainer').innerHTML = '';
+    document.getElementById('photoGrid').innerHTML = '';
+    clearSignature();
+
+    addLocationRow("Upstream", "", "");
+    addLocationRow("Effluent", "", "");
+    addLocationRow("Downstream", "", "");
+
+    addObjectiveRow("Turbidity (NTU)", "Field Meter", "1 NTU", "< 20% Increase", "pct_gt", "20");
+    addObjectiveRow("pH", "Field Meter", "0.1 pH", "6.5 - 8.5", "val_between", "6.5", "8.5");
+
+    addSampleBlock();
+  }
+
+  function triggerPrintOrPDF() {
+    preparePrintView();
+    window.print();
+  }
+
+  window.onbeforeprint = preparePrintView;
+
+  window.onload = () => {
+    if (document.querySelectorAll('.sample-block').length === 0) {
+      addSampleBlock();
+    }
+    initSignatureCanvas();
+
+    const savedSig = canvas ? canvas.getAttribute('data-saved-sig') : null;
+    if (savedSig) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = savedSig;
+    }
+
+    document.querySelectorAll('textarea').forEach(autoResize);
+  };
+
+  window.onresize = () => {
+    if (canvas) {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      ctx.putImageData(imgData, 0, 0);
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+    }
+    document.querySelectorAll('textarea').forEach(autoResize);
+  };
+</script>
+
 </body>
 </html>
