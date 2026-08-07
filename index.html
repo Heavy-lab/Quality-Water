@@ -73,9 +73,23 @@ font-weight: bold; font-size: 0.95rem; border-radius: 4px; margin-top: 10px; mar
 
 label { font-size: 0.8rem; font-weight: 600; margin-bottom: 3px; color: #334155; }
 
-input[type="text"], input[type="number"], input[type="date"], input[type="time"], select {
+input[type="text"], input[type="number"], input[type="date"], select {
 width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; background-color: #fff;
 -webkit-appearance: none; appearance: none;
+}
+
+.auto-expand {
+width: 100%;
+min-height: 38px;
+padding: 6px 8px;
+border: 1px solid var(--border);
+border-radius: 4px;
+font-size: 0.82rem;
+background-color: #fff;
+resize: none;
+overflow: hidden;
+white-space: pre-wrap;
+word-wrap: break-word;
 }
 
 .table-container { overflow-x: auto; margin-top: 6px; margin-bottom: 6px; -webkit-overflow-scrolling: touch; }
@@ -83,46 +97,142 @@ table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 th, td { border: 1px solid var(--border); padding: 5px 6px; text-align: left; vertical-align: middle; }
 th { background-color: var(--bg-light); font-weight: 600; }
 
+.yn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
+.yn-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; }
+.yn-item select { width: auto; }
+
 .controls-header {
 background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 16px;
 display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
 }
 
-.btn { background-color: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.82rem; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.btn { background-color: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.82rem; text-align: center; text-decoration: none; display: inline-block; }
 .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
 .btn-danger { background-color: var(--danger); }
-.btn-secondary { background-color: #475569; }
+.btn-secondary { background-color: #64748b; }
 .btn-success { background-color: #16a34a; }
 .btn:hover { opacity: 0.9; }
+
+.exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
+
+/* Signature Canvas Styling */
+.sig-container { border: 1px solid var(--border); border-radius: 4px; background: #fff; position: relative; height: 110px; touch-action: none; }
+.sig-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+.sig-tools { position: absolute; right: 4px; bottom: 4px; z-index: 10; }
+
+select[multiple] {
+min-height: 90px;
+padding: 4px;
+}
 
 .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
 .photo-card { border: 1px solid var(--border); padding: 6px; border-radius: 6px; background: #fafafa; display: flex; flex-direction: column; gap: 6px; position: relative; }
 .photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #eaefe9; border-radius: 4px; }
 .photo-card .btn-delete-photo {
-position: absolute; top: 10px; right: 10px; background-color: var(--danger); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 5;
+position: absolute;
+top: 10px;
+right: 10px;
+background-color: var(--danger);
+color: white;
+border: none;
+border-radius: 4px;
+padding: 4px 8px;
+font-size: 0.75rem;
+font-weight: bold;
+cursor: pointer;
+box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+z-index: 5;
 }
 .photo-card .btn-delete-photo:hover { opacity: 0.9; }
 
-.status-text { font-size: 0.75rem; color: #16a34a; font-weight: 600; margin-left: 8px; opacity: 0; transition: opacity 0.3s; }
-.status-text.show { opacity: 1; }
-
 /* Print & PDF Export Formatting */
 @media print {
-@page { margin: 10mm 8mm; }
+@page {
+margin: 10mm 8mm;
+}
+
 body { background-color: white; padding: 0; font-size: 9pt; }
 .container { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; overflow: visible; }
 .no-print { display: none !important; }
 
-.print-header { display: flex !important; page-break-after: avoid; break-after: avoid; }
-.section-block, .sample-block { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 14px; }
+.print-header { 
+display: flex !important; 
+page-break-after: avoid; 
+break-after: avoid;
+}
 
-input, textarea, select, .btn-delete-photo { display: none !important; }
-.print-text-block { display: block !important; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; min-height: 16px; font-size: 9pt !important; }
-table .print-text-block { border-bottom: none !important; }
-.section-title { background-color: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1; page-break-after: avoid !important; break-after: avoid !important; }
-.photo-grid, .photo-card, .photo-card img { page-break-inside: avoid !important; break-inside: avoid !important; }
-.photo-card { border: 1px solid #cbd5e1; }
-.photo-card img { max-height: 220px !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
+.section-block {
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+margin-bottom: 14px;
+}
+
+.sample-block {
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+margin-bottom: 12px;
+}
+
+/* Hide form elements on print */
+input, textarea, select, .btn-delete-photo {
+display: none !important;
+}
+
+/* Show full static text blocks on print */
+.print-text-block {
+display: block !important;
+border-bottom: 1px solid #cbd5e1;
+padding-bottom: 2px;
+min-height: 16px;
+font-size: 9pt !important;
+}
+
+table .print-text-block {
+border-bottom: none !important;
+}
+
+.yn-item { border: none !important; border-bottom: 1px dotted #cbd5e1 !important; }
+.section-title { 
+background-color: #f1f5f9 !important; 
+color: #0f172a !important; 
+border: 1px solid #cbd5e1; 
+page-break-after: avoid !important;
+break-after: avoid !important;
+}
+
+/* Prevent image and photo grid breaks across pages */
+.photo-grid {
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+}
+
+.photo-card { 
+page-break-inside: avoid !important; 
+break-inside: avoid !important; 
+border: 1px solid #cbd5e1; 
+}
+
+.photo-card img { 
+max-height: 220px !important; 
+width: 100% !important;
+height: auto !important;
+object-fit: contain !important; 
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+}
+
+.sig-container { 
+border: none; 
+border-bottom: 1px solid #000; 
+height: 75px; 
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+}
+
+img {
+page-break-inside: avoid !important;
+break-inside: avoid !important;
+}
 }
 </style>
 </head>
@@ -130,110 +240,10 @@ table .print-text-block { border-bottom: none !important; }
 
 <div class="container">
 
-<!-- File Controls (Hidden on Print) -->
-<div class="controls-header no-print">
-  <div>
-    <button type="button" class="btn btn-success" onclick="saveProgressManual()">Save Progress</button>
-    <span id="save-status" class="status-text">Saved!</span>
-  </div>
-  <div style="display: flex; gap: 8px;">
-    <label class="btn btn-secondary" style="margin: 0;">
-      Load Master Template
-      <input type="file" accept=".json" style="display: none;" onchange="importMasterTemplate(event)">
-    </label>
-    <button type="button" class="btn btn-secondary" onclick="exportMasterTemplate()">Save Master Template</button>
-  </div>
-</div>
-
 <!-- Header Section -->
 <div class="print-header">
 <div class="header-title">Daily Water Quality Monitoring Report</div>
-<img id="headerLogoDisplay" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAHhwAAAmGCAYAAACn6ECvAAAACXBIWXMAAFxGAABcRgEUlENBAAAgAElEQVR4nOzdMQEAIAzAMMC/5yFjPRIFddA7MwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANj1tgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAIDP3h0LAAAAAAzyt57GjhIJAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAIDYu6Pbtu40jcOvAd9bU4E4BRxYW4G5pwF7K8js7bmxU0GyFcRzw9txByM3wNAVDAUWsFIFK1WgveDhkFJkW45p3f9KzwMcWFGM4AUSkPYXgz8AAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAA5ATG+QAAIABJARRlAAAAAAAAAAGi/AAM43AQA3oB35EAAAAASUVORK5CYII=" alt="Logo">
-</div>
-
-<!-- General Site Info -->
-<div class="section-block">
-  <div class="section-title">General Site Info</div>
-  <div class="grid">
-    <div class="form-group">
-      <label>Inspector Name</label>
-      <input type="text" id="inspector_name">
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group">
-      <label>Inspection Date</label>
-      <input type="date" id="inspection_date">
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group">
-      <label>Project / Site Name</label>
-      <input type="text" id="site_name">
-      <div class="print-text-block"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Water Quality Objectives -->
-<div class="section-block">
-  <div class="section-title">Water Quality Objectives</div>
-  <div class="grid">
-    <div class="form-group">
-      <label>Turbidity Limit (NTU)</label>
-      <input type="number" id="wq_turbidity">
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group">
-      <label>Target pH Range</label>
-      <input type="text" id="wq_ph">
-      <div class="print-text-block"></div>
-    </div>
-    <div class="form-group">
-      <label>Min Dissolved Oxygen (mg/L)</label>
-      <input type="number" id="wq_do">
-      <div class="print-text-block"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Sampling Data Table -->
-<div class="section-block">
-  <div class="section-title">Field Sampling Log</div>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Location</th>
-          <th>Time Sampled</th>
-          <th>Turbidity (NTU)</th>
-          <th>pH</th>
-          <th>DO (mg/L)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="text" id="loc3_name" value="Location 3 (Upstream)"><div class="print-text-block"></div></td>
-          <td><input type="time" id="loc3_time"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc3_turb"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc3_ph"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc3_do"><div class="print-text-block"></div></td>
-        </tr>
-        <tr>
-          <td><input type="text" id="loc2_name" value="Location 2 (Effluent)"><div class="print-text-block"></div></td>
-          <td><input type="time" id="loc2_time"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc2_turb"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc2_ph"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc2_do"><div class="print-text-block"></div></td>
-        </tr>
-        <tr>
-          <td><input type="text" id="loc1_name" value="Location 1 (Downstream)"><div class="print-text-block"></div></td>
-          <td><input type="time" id="loc1_time"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc1_turb"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc1_ph"><div class="print-text-block"></div></td>
-          <td><input type="number" id="loc1_do"><div class="print-text-block"></div></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+<img id="headerLogoDisplay" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAHhwAAAmGCAYAAACn6ECvAAAACXBIWXMAAFxGAABcRgEUlENBAAAgAElEQVR4nOzdMQEAIAzAMMC/5yFjPRIFddA7MwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANj1tgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAIDP3h0LAAAAAAzyt57GjhIJAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAIDYu6Pbtu40jcOvAd9bU4E4BRxYW4G5pwF7K8js7bmxU0GyFcRzw9txByM3wNAVDAUWsFIFK1WgveDhkFJkW45p3f9KzwMcWFGM4AUSkPYXgz8AAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAA5ATG+QAAIABJARRlAAAAAAAAAAGi/AAM43AQA3oB35EAAAAASUVORK5CYII=" alt="Logo">
 </div>
 
 <!-- Dynamic Photo Section Container -->
@@ -250,121 +260,8 @@ table .print-text-block { border-bottom: none !important; }
 </div>
 
 <script>
-// --- Global State ---
 let photoList = [];
-const STORAGE_KEY = 'wq_report_progress';
 
-// --- Initialization ---
-window.addEventListener('DOMContentLoaded', () => {
-  loadProgress(); // Check if user has ongoing work
-  setupLiveSync(); // Ensure printing divs match inputs as user types
-  
-  // Set up 5-minute auto-save
-  setInterval(() => {
-    saveProgress(true);
-  }, 5 * 60 * 1000); 
-});
-
-// --- State Management Logic ---
-
-// Collects all current form data + photos into an object
-function getFormState() {
-  const data = { fields: {}, photos: photoList };
-  document.querySelectorAll('input:not([type="file"]), select, textarea').forEach(el => {
-    if (el.id) {
-      if (el.type === 'checkbox' || el.type === 'radio') {
-        data.fields[el.id] = el.checked;
-      } else {
-        data.fields[el.id] = el.value;
-      }
-    }
-  });
-  return data;
-}
-
-// Injects data object back into the form fields
-function applyFormState(data) {
-  if (data.fields) {
-    Object.keys(data.fields).forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        if (el.type === 'checkbox' || el.type === 'radio') {
-          el.checked = data.fields[id];
-        } else {
-          el.value = data.fields[id];
-        }
-      }
-    });
-  }
-  
-  if (data.photos) {
-    photoList = data.photos;
-    renderPhotos();
-  }
-  
-  syncAllPrintViews(); // Update print layout to match loaded data
-}
-
-// --- Save/Load Progress (Local Storage) ---
-function saveProgress(isAuto = false) {
-  const state = getFormState();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  
-  // Show save indicator
-  const statusEl = document.getElementById('save-status');
-  statusEl.textContent = isAuto ? 'Auto-saved' : 'Saved!';
-  statusEl.classList.add('show');
-  setTimeout(() => statusEl.classList.remove('show'), 2500);
-}
-
-function saveProgressManual() {
-  saveProgress(false);
-}
-
-function loadProgress() {
-  const savedStr = localStorage.getItem(STORAGE_KEY);
-  if (savedStr) {
-    try {
-      applyFormState(JSON.parse(savedStr));
-    } catch (e) {
-      console.error("Could not load saved progress.", e);
-    }
-  }
-}
-
-// --- Master Template Logic (JSON Export/Import) ---
-function exportMasterTemplate() {
-  const state = getFormState();
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-  
-  const a = document.createElement('a');
-  a.setAttribute("href", dataStr);
-  a.setAttribute("download", "WQ_Master_Template.json");
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-function importMasterTemplate(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const state = JSON.parse(e.target.result);
-      applyFormState(state);
-      saveProgressManual(); // Immediately save loaded template to current progress
-      alert("Master Template loaded successfully!");
-    } catch (err) {
-      alert("Invalid template file format.");
-    }
-  };
-  reader.readAsText(file);
-  event.target.value = ''; // Reset input to allow reloading same file if needed
-}
-
-// --- Photo Upload Logic ---
 function handlePhotoUpload(event) {
   const files = Array.from(event.target.files);
   files.forEach(file => {
@@ -376,18 +273,16 @@ function handlePhotoUpload(event) {
         caption: file.name
       });
       renderPhotos();
-      saveProgress(true); // Auto-save after photo change
     };
     reader.readAsDataURL(file);
   });
-  event.target.value = ''; 
+  event.target.value = ''; // Reset input
 }
 
 function deletePhoto(id) {
   if (confirm("Are you sure you want to delete this photo?")) {
     photoList = photoList.filter(photo => photo.id !== id);
     renderPhotos();
-    saveProgress(true);
   }
 }
 
@@ -401,31 +296,17 @@ function renderPhotos() {
     card.innerHTML = `
       <button type="button" class="btn-delete-photo no-print" onclick="deletePhoto(${photo.id})">Delete</button>
       <img src="${photo.src}" alt="Site Photo ${index + 1}">
-      <input type="text" id="photo_cap_${photo.id}" value="${photo.caption}" placeholder="Photo caption..." oninput="updatePhotoCaption(${index}, this.value)">
+      <input type="text" value="${photo.caption}" placeholder="Photo caption..." onchange="photoList[${index}].caption = this.value; syncPrintView();">
       <div class="print-text-block">${photo.caption}</div>
     `;
     grid.appendChild(card);
   });
+  syncPrintView();
 }
 
-function updatePhotoCaption(index, value) {
-  photoList[index].caption = value;
-}
-
-// --- Print Formatting Synchronization ---
-function setupLiveSync() {
-  document.addEventListener('input', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-      const printBlock = e.target.nextElementSibling;
-      if (printBlock && printBlock.classList.contains('print-text-block')) {
-        printBlock.textContent = e.target.value;
-      }
-    }
-  });
-}
-
-function syncAllPrintViews() {
-  document.querySelectorAll('input, textarea, select').forEach(input => {
+function syncPrintView() {
+  // Syncs inputs with static printable blocks
+  document.querySelectorAll('input[type="text"]').forEach(input => {
     const printBlock = input.nextElementSibling;
     if (printBlock && printBlock.classList.contains('print-text-block')) {
       printBlock.textContent = input.value;
