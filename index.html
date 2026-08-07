@@ -873,7 +873,24 @@
     });
   }
 
-  // Auto-Save and LocalStorage Progress Handlers
+  // Cross-Platform Print/PDF Handler (Fixing iOS/iPadOS/PC print context)
+  function triggerPrintOrPDF() {
+    preparePrintView();
+    
+    // Check if running on iOS/iPadOS Safari where direct window.print() can occasionally block or fail to render layout wrappers cleanly
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOS) {
+      // Small timeout allows DOM print blocks to commit cleanly before triggering print dialog on Safari iOS
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    } else {
+      window.print();
+    }
+  }
+
+  // Auto-Save and LocalStorage Progress Handlers (Silent background execution to prevent screen shifts)
   function gatherFormState() {
     let sigDataUrl = "";
     if (canvas) {
@@ -954,7 +971,7 @@
       localStorage.setItem('water_quality_report_autosave', JSON.stringify(data));
       
       const indicator = document.getElementById('saveStatusIndicator');
-      if (indicator) {
+      if (indicator && !isAuto) {
         const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         indicator.textContent = `Progress saved (${timeString})`;
         setTimeout(() => {
@@ -1144,11 +1161,6 @@
     addSampleBlock();
   }
 
-  function triggerPrintOrPDF() {
-    preparePrintView();
-    window.print();
-  }
-
   window.onbeforeprint = preparePrintView;
 
   window.onload = () => {
@@ -1164,7 +1176,7 @@
 
     document.querySelectorAll('textarea').forEach(autoResize);
 
-    // Set up regular background auto-save interval every 30 seconds
+    // Set up regular background auto-save interval every 30 seconds (silent, no layout or screen shift)
     setInterval(() => {
       saveProgress(true);
     }, 30000);
