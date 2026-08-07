@@ -255,7 +255,7 @@ break-inside: avoid !important;
 
 <div class="container">
 
-<!-- Control Bar with Save & Master Template Actions (Added here so it doesn't interrupt your layout) -->
+<!-- Control Bar with Save & Master Template Actions -->
 <div class="controls-header no-print">
   <div class="controls-group">
     <button type="button" class="btn btn-success" onclick="saveReportData()">💾 Save Progress</button>
@@ -264,7 +264,7 @@ break-inside: avoid !important;
       📤 Upload Master Template
       <input type="file" id="templateUploader" accept=".json" onchange="importMasterTemplate(event)" style="display: none;">
     </label>
-    <button type="button" class="btn btn-danger" onclick="clearReportData()">🗑️ Clear Report</button>
+    <button type="button" class="btn btn-danger" onclick="clearReportData(true)">🗑️ Clear Report</button>
   </div>
   <div id="statusToast">Saved successfully!</div>
 </div>
@@ -274,6 +274,9 @@ break-inside: avoid !important;
 <div class="header-title">Daily Water Quality Monitoring Report</div>
 <img id="headerLogoDisplay" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAHhwAAAmGCAYAAACn6ECvAAAACXBIWXMAAFxGAABcRgEUlENBAAAgAElEQVR4nOzdMQEAIAzAMMC/5yFjPRIFddA7MwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANj1tgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAw2EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgwHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADDYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMNhAAAAAAAAAAAAAAAAAIDP3h0LAAAAAAzyt57GjhIJAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAHhMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAiHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgQDgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoTDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAB4TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwIhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8JhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYEA4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaEwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAeEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGBAOAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgHAYAAAAAAAAAAAAAAAAAAIDYu6Pbtu40jcOvAd9bU4E4BRxYW4G5pwF7K8js7bmxU0GyFcRzw9txByM3wNAVDAUWsFIFK1WgveDhkFJkW45p3f9KzwMcWFGM4AUSkPYXgz8AAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIACBIcBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAwWEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIEhwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoADBYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKEBwGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAChAcBgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAgSHAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAMFhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoQHAYAAAAAAAAAAAA5ATG+QAAIABJARRlAAAAAAAAAAGi/AAM43AQA3oB35EAAAAASUVORK5CYII=" alt="Logo">
 </div>
+
+<!-- YOUR CUSTOM HTML LAYOUT GOES HERE -->
+<!-- The script below will automatically target all inputs, parts, and sections you place here -->
 
 <!-- Dynamic Photo Section Container -->
 <div class="section-block">
@@ -292,22 +295,24 @@ break-inside: avoid !important;
 let photoList = [];
 const STORAGE_KEY = 'water_quality_report_data';
 
-// Automatically bind the autosave to all text inputs, textareas, and selects on the page
+// Automatically bind the autosave to ALL text inputs, textareas, and selects on the page
 function setupAutoSaveListeners() {
   const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
   inputs.forEach(input => {
-    // If the element doesn't have an ID, we can't save it effectively
-    if(input.id) {
-      input.addEventListener('input', autoSaveData);
-      input.addEventListener('change', autoSaveData);
-    }
+    input.addEventListener('input', autoSaveData);
+    input.addEventListener('change', autoSaveData);
   });
 }
 
-// Load initial data from localStorage on load
+// Load initial data from localStorage on load. If none exists, keep/force a blank template.
 window.addEventListener('DOMContentLoaded', () => {
   setupAutoSaveListeners();
-  loadSavedData();
+  const hasLoadedData = loadSavedData();
+  
+  if (!hasLoadedData) {
+    // No saved progress or master template found, ensure form is entirely blank
+    clearReportData(false); 
+  }
 });
 
 function handlePhotoUpload(event) {
@@ -364,15 +369,22 @@ function syncPrintView() {
   });
 }
 
-// Gathers all input data dynamically
+// Gathers ALL input data dynamically, handling all parts, parameters, and sections
 function getFormData() {
   const fieldData = {};
   const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
   
-  inputs.forEach(field => {
-    // Exclude dynamically generated photo captions from the general field save
-    if (field.id && !field.id.startsWith('photo_caption_')) {
-      fieldData[field.id] = field.type === 'checkbox' ? field.checked : field.value;
+  inputs.forEach((field, index) => {
+    // Exclude dynamically generated photo captions from the general field save (handled separately)
+    if (field.id && field.id.startsWith('photo_caption_')) return;
+    
+    // Create a reliable key even if the element lacks an ID or Name
+    const key = field.id || field.name || 'custom_field_idx_' + index;
+    
+    if (field.type === 'checkbox' || field.type === 'radio') {
+      fieldData[key] = field.checked;
+    } else {
+      fieldData[key] = field.value;
     }
   });
   
@@ -382,18 +394,22 @@ function getFormData() {
   };
 }
 
-// Populates data dynamically
+// Populates data dynamically across all parameters and sections
 function setFormData(data) {
-  if (!data) return;
+  if (!data) return false;
   
   if (data.fields) {
-    Object.keys(data.fields).forEach(id => {
-      const field = document.getElementById(id);
-      if (field) {
-        if (field.type === 'checkbox') {
-          field.checked = data.fields[id];
+    const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
+    inputs.forEach((field, index) => {
+      if (field.id && field.id.startsWith('photo_caption_')) return;
+      
+      const key = field.id || field.name || 'custom_field_idx_' + index;
+      
+      if (data.fields[key] !== undefined) {
+        if (field.type === 'checkbox' || field.type === 'radio') {
+          field.checked = data.fields[key];
         } else {
-          field.value = data.fields[id];
+          field.value = data.fields[key];
         }
       }
     });
@@ -405,6 +421,7 @@ function setFormData(data) {
   }
 
   syncPrintView();
+  return true;
 }
 
 // Local Storage Handlers
@@ -424,26 +441,37 @@ function loadSavedData() {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      setFormData(parsed);
+      return setFormData(parsed);
     } catch(e) {
       console.error("Could not load saved data", e);
+      return false;
     }
   }
+  return false;
 }
 
-function clearReportData() {
-  if (confirm("Clear all field values and photos? This cannot be undone.")) {
-    localStorage.removeItem(STORAGE_KEY);
-    const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
-    inputs.forEach(field => {
-      if (field.type === 'checkbox') field.checked = false;
-      else field.value = '';
-    });
-    photoList = [];
-    renderPhotos();
-    syncPrintView();
-    showToast("Report Cleared");
+// Clears everything to maintain a strictly blank template
+function clearReportData(promptUser = true) {
+  if (promptUser && !confirm("Clear all field values and photos? This cannot be undone.")) {
+    return;
   }
+  
+  localStorage.removeItem(STORAGE_KEY);
+  
+  const inputs = document.querySelectorAll('input:not([type="file"]), textarea, select');
+  inputs.forEach(field => {
+    if (field.type === 'checkbox' || field.type === 'radio') {
+      field.checked = false;
+    } else {
+      field.value = '';
+    }
+  });
+  
+  photoList = [];
+  renderPhotos();
+  syncPrintView();
+  
+  if (promptUser) showToast("Report Cleared");
 }
 
 // Master Template Export & Import
@@ -473,14 +501,14 @@ function importMasterTemplate(event) {
     try {
       const templateData = JSON.parse(e.target.result);
       setFormData(templateData);
-      autoSaveData();
+      autoSaveData(); // Immediately save imported data to progress
       showToast("Master Template Loaded!");
     } catch (err) {
       alert("Invalid master template file format.");
     }
   };
   reader.readAsText(file);
-  event.target.value = '';
+  event.target.value = ''; // Reset input to allow re-uploading the same file if needed
 }
 
 function showToast(message) {
