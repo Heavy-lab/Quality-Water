@@ -3,11 +3,11 @@
 <head>
   <link rel="manifest" href="manifest.json">
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
-      });
-    }
+    // Enhanced service worker registration will try a local 'sw.js' and fall back to registering
+    // an inline-generated blob service worker if 'sw.js' is not available (best-effort).
+    // The service worker script is built below in the page (swCode) and used as a fallback.
+    // This keeps the original existing registration but extends it with background-sync capabilities.
+    // Registration actually happens after the main UI is defined (window.onload).
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -25,6 +25,9 @@
       --border: #cbd5e1;
       --bg-light: #f8fafc;
       --danger: #dc2626;
+      --success: #16a34a;
+      --pending: #d97706;
+      --muted: #475569;
     }
 
     * { 
@@ -98,6 +101,7 @@
       border-radius: 4px; font-size: 16px; background-color: #fff; resize: none;
       overflow: hidden; white-space: pre-wrap; word-wrap: break-word;
       -webkit-appearance: none; appearance: none;
+      position: relative;
     }
 
     .table-container { overflow-x: auto; margin-top: 6px; margin-bottom: 6px; -webkit-overflow-scrolling: touch; }
@@ -120,8 +124,8 @@
     .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
     .btn-danger { background-color: var(--danger); }
     .btn-secondary { background-color: #64748b; }
-    .btn-success { background-color: #16a34a; }
-    .btn-warning { background-color: #d97706; color: white; }
+    .btn-success { background-color: var(--success); }
+    .btn-warning { background-color: var(--pending); color: white; }
     .btn:hover, .btn:active { opacity: 0.85; }
 
     .exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
@@ -136,6 +140,31 @@
     .photo-card { border: 1px solid var(--border); padding: 6px; border-radius: 6px; background: #fafafa; display: flex; flex-direction: column; gap: 6px; }
     .photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #eaefe9; border-radius: 4px; }
     .photo-card-actions { display: flex; justify-content: flex-end; }
+
+    .project-picker { display:flex; gap:8px; align-items:center; }
+
+    .mic-floating {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      z-index: 40;
+      display:none;
+      padding: 6px;
+      border-radius: 6px;
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+    }
+
+    .coord-badge {
+      font-size: 0.85rem;
+      background: #f1f5f9;
+      border: 1px dashed var(--border);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-left: 8px;
+    }
 
     @media (max-width: 600px) {
       .photo-grid { grid-template-columns: 1fr; }
@@ -163,6 +192,12 @@
       .section-title { background-color: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1; page-break-after: avoid; }
       .sig-container { border: none; border-bottom: 1px solid #000; height: 75px; }
     }
+
+    /* Sync status badges */
+    .sync-badge { padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; }
+    .sync-synced { background: #ecfdf5; color: var(--success); border: 1px solid rgba(16,185,129,0.12); }
+    .sync-pending { background: #fff7ed; color: var(--pending); border: 1px solid rgba(217,119,6,0.12); }
+    .sync-local { background: #f1f5f9; color: var(--muted); border: 1px solid rgba(71,85,105,0.06); }
   </style>
 </head>
 <body>
@@ -175,10 +210,15 @@
   
   <div class="form-content">
     <div class="controls-header no-print">
-      <div>
-        <label for="logoInput"><strong>Company Logo (Header):</strong></label>
-        <input type="file" id="logoInput" accept="image/*" onchange="previewLogo(event)" style="padding: 0; border: none;">
+      <div class="project-picker">
+        <label for="projectSelector"><strong>Project:</strong></label>
+        <select id="projectSelector" aria-label="Project selector"></select>
+        <input id="newProjectName" type="text" placeholder="New project name / ID" style="padding:6px; border-radius:4px; border:1px solid var(--border);">
+        <button class="btn btn-sm btn-success" type="button" onclick="createOrSwitchProject()">Create / Switch</button>
+        <button class="btn btn-sm btn-secondary" type="button" onclick="renameProject()">Rename</button>
+        <button class="btn btn-sm btn-danger" type="button" onclick="deleteProject()" title="Delete current project's local cache">Delete Local</button>
       </div>
+
       <div style="display:flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;">
         <button class="btn btn-warning" type="button" onclick="manualSaveProgress()">Save Progress</button>
         <div class="save-indicator-container">
@@ -187,6 +227,7 @@
         <button class="btn btn-success" type="button" onclick="downloadMasterTemplate()">Download Template</button>
         <button class="btn btn-secondary" type="button" onclick="document.getElementById('masterFileInput').click()">Upload Template</button>
         <input type="file" id="masterFileInput" accept=".json" style="display:none;" onchange="uploadMasterTemplate(event)">
+        <button class="btn btn-sm" type="button" onclick="triggerPrintOrPDF()">Print / Save PDF</button>
       </div>
     </div>
 
@@ -367,13 +408,644 @@
   </div>
 </div>
 
+<!-- Floating mic used for focused textarea (voice-to-text) -->
+<button id="micFloat" class="mic-floating no-print" title="Start/Stop dictation" aria-hidden="true">🎤</button>
+
 <script>
+  /**********************************************************************
+   * Multi-project & IndexedDB storage, offline queue, background-sync
+   * GPS auto-tagging per sample block
+   * Voice-to-Text with fallback to MediaRecorder
+   * Photo compression & EXIF stripping before storing
+   * PDF export via jsPDF (dynamically loaded; cached by service worker)
+   * Sync status indicator per project
+   **********************************************************************/
+
+  // ----- Lightweight IndexedDB helpers -----
+  const DB_NAME = 'wq_reports_db_v1';
+  const DB_VERSION = 1;
+  let dbPromise = null;
+  function openDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const r = indexedDB.open(DB_NAME, DB_VERSION);
+      r.onupgradeneeded = e => {
+        const db = e.target.result;
+        // objectStores: projects meta, reports queue (per project via index), photos store
+        if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('reports_queue')) {
+          const s = db.createObjectStore('reports_queue', { keyPath: 'qid', autoIncrement: true });
+          s.createIndex('projectId', 'projectId', { unique: false });
+          s.createIndex('status', 'status', { unique: false });
+        }
+        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
+      };
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+    return dbPromise;
+  }
+
+  async function idbPut(store, value) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(store, 'readwrite');
+      const st = tx.objectStore(store);
+      const req = st.put(value);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async function idbGetAllByIndex(store, indexName, query) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(store, 'readonly');
+      const st = tx.objectStore(store);
+      const idx = st.index(indexName);
+      const r = idx.getAll(query);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbAdd(store, value) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(store, 'readwrite');
+      const st = tx.objectStore(store);
+      const req = st.add(value);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async function idbGetAll(store) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(store, 'readonly');
+      const st = tx.objectStore(store);
+      const req = st.getAll();
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async function idbDelete(store, key) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(store, 'readwrite');
+      const st = tx.objectStore(store);
+      const req = st.delete(key);
+      req.onsuccess = () => res();
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  // ----- Project management (namespacing localStorage) -----
+  let currentProjectId = localStorage.getItem('wq_current_project') || 'default_project';
+  const PROJECT_LIST_KEY = 'wq_project_list';
+
+  function loadProjectList() {
+    try {
+      const raw = localStorage.getItem(PROJECT_LIST_KEY);
+      return raw ? JSON.parse(raw) : [{ id: 'default_project', name: 'Default Project' }];
+    } catch (e) { return [{ id: 'default_project', name: 'Default Project' }]; }
+  }
+  function saveProjectList(list) { localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list)); }
+
+  function populateProjectSelector() {
+    const sel = document.getElementById('projectSelector');
+    sel.innerHTML = '';
+    const list = loadProjectList();
+    list.forEach(p => {
+      const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name || p.id;
+      sel.appendChild(opt);
+    });
+    sel.value = currentProjectId;
+  }
+
+  function createOrSwitchProject() {
+    const nameInput = document.getElementById('newProjectName');
+    const name = nameInput.value && nameInput.value.trim();
+    const pid = name ? name.replace(/\s+/g, '_') : `project_${Date.now()}`;
+    let list = loadProjectList();
+    if (!list.find(p => p.id === pid)) {
+      list.push({ id: pid, name: name || pid });
+      saveProjectList(list);
+    }
+    currentProjectId = pid;
+    localStorage.setItem('wq_current_project', currentProjectId);
+    populateProjectSelector();
+    loadSavedProgressForProject(); // load project-specific state
+    setSyncStatus('local');
+    alert('Switched to project: ' + pid);
+  }
+
+  function renameProject() {
+    const sel = document.getElementById('projectSelector');
+    const list = loadProjectList();
+    const current = list.find(p => p.id === sel.value);
+    const newName = prompt('Rename project display name:', current ? current.name : sel.value);
+    if (newName != null) {
+      if (current) current.name = newName;
+      saveProjectList(list);
+      populateProjectSelector();
+    }
+  }
+
+  function deleteProject() {
+    if (!confirm('Delete local data for current project? This removes autosaves and queued items only.')) return;
+    // Remove autosave key for this project and queued reports in idb
+    localStorage.removeItem(autosaveKey(currentProjectId));
+    // remove queued reports
+    (async () => {
+      const entries = await idbGetAllByIndex('reports_queue', 'projectId', currentProjectId);
+      for (const e of entries) {
+        await idbDelete('reports_queue', e.qid);
+      }
+      alert('Local data deleted for project ' + currentProjectId);
+      setSyncStatus('local');
+    })();
+  }
+
+  function autosaveKey(projectId) { return `water_quality_report_autosave_${projectId}`; }
+
+  // Override save/load to be project-scoped
+  function saveProgress(isAuto = false) {
+    try {
+      const key = autosaveKey(currentProjectId);
+      localStorage.setItem(key, JSON.stringify(gatherFormState()));
+      setSyncStatus('local');
+      if (!isAuto) {
+        const indicator = document.getElementById('saveStatusIndicator');
+        if (indicator) {
+          const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          indicator.textContent = `Saved Locally (${timeString})`; // local saved
+          setTimeout(() => { if (indicator.textContent.includes(timeString)) indicator.textContent = ''; }, 4000);
+        }
+      }
+    } catch (e) { console.warn("Storage error saving progress: ", e); }
+  }
+
+  function manualSaveProgress() { saveProgress(false); }
+
+  function loadSavedProgressForProject() {
+    const savedData = localStorage.getItem(autosaveKey(currentProjectId));
+    if (savedData) {
+      try { populateFromMasterData(JSON.parse(savedData)); setSyncStatus('local'); return true; } 
+      catch (e) { console.error("Error loading autosaved progress:", e); }
+    } else {
+      // if none, try default autosave fallback
+      if (currentProjectId !== 'default_project') {
+        const fallback = localStorage.getItem('water_quality_report_autosave');
+        if (fallback) { populateFromMasterData(JSON.parse(fallback)); setSyncStatus('local'); return true; }
+      }
+    }
+    return false;
+  }
+
+  // ----- Report queuing & network sync -----
+  // queueReport: stores report in IDB reports_queue store; attempts immediate upload if online;
+  // if offline, registers background-sync (if available) or uses retry timer.
+  async function queueReport(report) {
+    try {
+      report.projectId = currentProjectId;
+      report.createdAt = new Date().toISOString();
+      report.status = 'queued';
+      await idbAdd('reports_queue', report);
+      setSyncStatus('pending');
+      // try immediate upload
+      if (navigator.onLine) await attemptSyncQueue();
+      else {
+        // register background sync
+        if (navigator.serviceWorker && navigator.serviceWorker.ready && 'SyncManager' in window) {
+          const reg = await navigator.serviceWorker.ready;
+          try { await reg.sync.register('wq-sync-' + currentProjectId); console.log('Background sync registered'); } catch (e) { console.warn('Background sync registration failed', e); startRetryTimer(); }
+        } else {
+          startRetryTimer();
+        }
+      }
+      return true;
+    } catch (e) { console.error('queueReport error', e); return false; }
+  }
+
+  let retryTimer = null;
+  function startRetryTimer() {
+    if (retryTimer) return;
+    retryTimer = setInterval(() => {
+      if (navigator.onLine) {
+        attemptSyncQueue().finally(() => { clearInterval(retryTimer); retryTimer = null; });
+      }
+    }, 15000);
+  }
+
+  async function attemptSyncQueue() {
+    const queued = await idbGetAllByIndex('reports_queue', 'projectId', currentProjectId);
+    if (!queued || queued.length === 0) { setSyncStatus('synced'); return; }
+    for (const item of queued) {
+      try {
+        // Replace with your real endpoint. Here we POST to /upload-report as a placeholder.
+        // The endpoint must accept JSON and uploaded images as data URLs or separate multipart.
+        const res = await fetch('/upload-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item),
+        });
+        if (res.ok) {
+          await idbDelete('reports_queue', item.qid);
+        } else {
+          console.warn('Server responded non-OK, will retry later', await res.text());
+        }
+      } catch (e) {
+        console.warn('Upload failed, will retry later', e);
+        // network error -> stop processing now
+        setSyncStatus('pending');
+        throw e;
+      }
+    }
+    setSyncStatus('synced');
+  }
+
+  // Expose a "submit" action for users that will queue & try to sync immediately.
+  async function submitReportNow() {
+    const state = gatherFormState();
+    await saveProgress(true); // save first
+    const queued = await queueReport(state);
+    if (queued) alert('Report queued for sync. It will upload when network is available.');
+  }
+
+  // ----- Sync status UI -----
+  function setSyncStatus(state) {
+    const el = document.getElementById('saveStatusIndicator');
+    if (!el) return;
+    if (state === 'synced') {
+      el.innerHTML = `<span class="sync-badge sync-synced">Synced to Cloud</span>`;
+    } else if (state === 'pending') {
+      el.innerHTML = `<span class="sync-badge sync-pending">Pending Sync</span>`;
+    } else {
+      el.innerHTML = `<span class="sync-badge sync-local">Saved Locally</span>`;
+    }
+  }
+
+  // ----- Photo compression (canvas) and EXIF stripping -----
+  // Max dimension for compression
+  const MAX_PHOTO_DIM = 1280;
+
+  async function compressImageFile(file) {
+    // Use createImageBitmap when available to decode quickly
+    try {
+      const imgBitmap = await createImageBitmap(file);
+      let w = imgBitmap.width, h = imgBitmap.height;
+      const ratio = Math.min(1, MAX_PHOTO_DIM / Math.max(w, h));
+      w = Math.round(w * ratio); h = Math.round(h * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      // Draw image (this strips EXIF/orientation)
+      ctx.drawImage(imgBitmap, 0, 0, w, h);
+      // toBlob compressed (JPEG) - quality 0.75
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.75));
+      // convert to dataURL for easier inline storage
+      const dataUrl = await new Promise((res) => {
+        const r = new FileReader();
+        r.onload = e => res(e.target.result);
+        r.readAsDataURL(blob);
+      });
+      // store compressed image in IDB photos store (project-scoped)
+      const rec = { projectId: currentProjectId, dataUrl, originalName: file.name, createdAt: new Date().toISOString() };
+      try {
+        await idbAdd('photos', rec);
+      } catch (e) { console.warn('Photo IDB store add failed', e); }
+      return dataUrl;
+    } catch (e) {
+      // fallback: read as dataURL uncompressed
+      return await new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result);
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  function createPhotoCard(src, comment = "") {
+    const grid = document.getElementById('photoGrid');
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.innerHTML = `
+      <img src="${src}" alt="Site Photo" data-saved-src="${src}">
+      <textarea class="auto-expand photo-comment" rows="1" oninput="autoResize(this)" placeholder="Description / Location Comments...">${comment}</textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <small class="coord-badge" style="display:none;" aria-hidden="true"></small>
+        </div>
+        <div class="photo-card-actions no-print"><button class="btn btn-sm btn-danger" type="button" onclick="this.closest('.photo-card').remove()">Delete Photo</button></div>
+      </div>
+    `;
+    grid.appendChild(card);
+    card.querySelectorAll('textarea').forEach(autoResize);
+    initScrollFixForElements(card.querySelectorAll('textarea'));
+  }
+
+  async function handlePhotoUpload(event) {
+    Array.from(event.target.files).forEach(async (file) => {
+      const dataUrl = await compressImageFile(file);
+      createPhotoCard(dataUrl);
+    });
+    event.target.value = '';
+  }
+
+  // ----- GPS Auto-tagging for each sample block -----
+  function addSampleBlock() {
+    sampleCount++;
+    const container = document.getElementById('sampleLogsContainer');
+    const block = document.createElement('div');
+    block.className = 'sample-block';
+    block.id = `sample-block-${sampleCount}`;
+    block.dataset.lat = '';
+    block.dataset.lon = '';
+    block.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin: 4px 0; background: #e2e8f0; padding: 6px; border-radius: 4px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <strong>Sample Collection #${sampleCount}</strong>
+          <span class="coord-badge" id="coord-${sampleCount}" style="display:none;"></span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-sm btn-secondary no-print" type="button" onclick="tagGPS(${sampleCount})" title="Tag GPS for this sample">Tag GPS</button>
+          <button class="btn btn-sm btn-warning no-print" type="button" onclick="captureGPSFallback(${sampleCount})" title="Use cached or manual GPS input">Use/Enter GPS</button>
+          <button class="btn btn-sm btn-danger no-print" type="button" onclick="this.closest('.sample-block').remove(); runExceedanceCheck();">Remove</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 5%;">Row</th><th style="width: 25%;">Parameter</th><th style="width: 17%;">Downstream Result</th><th style="width: 17%;">Effluent Result</th><th style="width: 17%;">Upstream Result</th><th style="width: 13%;">Exceedance?</th><th class="no-print" style="width: 6%;">Action</th>
+            </tr>
+          </thead>
+          <tbody class="sample-param-tbody">
+            <tr class="time-row" style="background-color: #f8fafc;">
+              <td style="text-align:center; font-weight:bold;">Time</td>
+              <td><strong>Time (HHMM)</strong></td>
+              <td><input type="text" class="ds-time" placeholder="HHMM"></td>
+              <td><input type="text" class="eff-time" placeholder="HHMM"></td>
+              <td><input type="text" class="us-time" placeholder="HHMM"></td>
+              <td style="text-align:center;">-</td><td class="no-print"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm no-print" type="button" onclick="addParamRowToSample(${sampleCount})" style="margin-top: 4px;">+ Add Parameter</button>
+      <div class="form-group full-width" style="margin-top: 8px;">
+        <label>Sample #${sampleCount} Comments *</label>
+        <textarea class="auto-expand sample-comment" rows="1" oninput="autoResize(this)" placeholder="Describe in-water work, exceedance causes, or corrective measures..."></textarea>
+      </div>
+    `;
+    container.appendChild(block);
+
+    const objRows = document.querySelectorAll('#objectivesTable tbody tr');
+    if (objRows.length > 0) {
+      objRows.forEach((oRow) => { addParamRowToSample(sampleCount, oRow.querySelector('.obj-param').value); });
+    } else {
+      addParamRowToSample(sampleCount, "Turbidity (NTU)");
+    }
+    initScrollFixForElements(block.querySelectorAll('textarea, input'));
+    // Try to auto-tag GPS when block is created (best-effort)
+    if (navigator.geolocation) {
+      // quick, non-blocking attempt
+      navigator.geolocation.getCurrentPosition(pos => {
+        block.dataset.lat = pos.coords.latitude;
+        block.dataset.lon = pos.coords.longitude;
+        const badge = document.getElementById(`coord-${sampleCount}`);
+        if (badge) { badge.style.display='inline-block'; badge.textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; }
+      }, () => {});
+    }
+  }
+
+  function tagGPS(sampleNum) {
+    const block = document.getElementById(`sample-block-${sampleNum}`);
+    if (!block) return;
+    if (!navigator.geolocation) { alert('Geolocation not available on this device.'); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      block.dataset.lat = pos.coords.latitude;
+      block.dataset.lon = pos.coords.longitude;
+      const badge = document.getElementById(`coord-${sampleNum}`);
+      if (badge) { badge.style.display='inline-block'; badge.textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; }
+      saveProgress(true);
+    }, (err) => {
+      alert('Unable to get GPS: ' + err.message);
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  }
+
+  function captureGPSFallback(sampleNum) {
+    // If GPS unavailable, allow manual entry
+    const block = document.getElementById(`sample-block-${sampleNum}`);
+    const manual = prompt('Enter lat,lon (e.g. 37.12345,-122.12345) or leave blank to clear:', block.dataset.lat ? `${block.dataset.lat},${block.dataset.lon}` : '');
+    if (manual === null) return;
+    if (manual.trim() === '') {
+      block.dataset.lat = ''; block.dataset.lon = '';
+      const badge = document.getElementById(`coord-${sampleNum}`); if (badge) badge.style.display='none';
+    } else {
+      const [lat, lon] = manual.split(',').map(s => parseFloat(s.trim()));
+      if (!isNaN(lat) && !isNaN(lon)) {
+        block.dataset.lat = lat; block.dataset.lon = lon;
+        const badge = document.getElementById(`coord-${sampleNum}`);
+        if (badge) { badge.style.display='inline-block'; badge.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`; }
+        saveProgress(true);
+      } else {
+        alert('Invalid coordinates.');
+      }
+    }
+  }
+
+  // ----- Voice-to-Text with MediaRecorder fallback -----
+  let recognition = null;
+  let recordingStream = null;
+  let mediaRecorder = null;
+  let currentDictateTarget = null;
+  const micFloat = document.getElementById('micFloat');
+
+  function setupSpeechRecognition() {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    if (!SpeechRec) return null;
+    const r = new SpeechRec();
+    r.continuous = false;
+    r.interimResults = true;
+    r.lang = 'en-US';
+    r.onresult = (ev) => {
+      const results = ev.results;
+      let transcript = '';
+      for (let i = ev.resultIndex; i < results.length; i++) transcript += results[i][0].transcript;
+      if (currentDictateTarget) {
+        currentDictateTarget.value = (currentDictateTarget.value ? currentDictateTarget.value + ' ' : '') + transcript;
+        autoResize(currentDictateTarget);
+      }
+    };
+    r.onerror = (e) => console.warn('Speech recognition error', e);
+    r.onend = () => {
+      micFloat.textContent = '🎤';
+      if (currentDictateTarget) currentDictateTarget.classList.remove('dictating');
+      currentDictateTarget = null;
+    };
+    return r;
+  }
+
+  function startDictationFor(textarea) {
+    // If browser supports web speech API, use it; otherwise, fallback to MediaRecorder
+    if (!textarea) return;
+    currentDictateTarget = textarea;
+    if (!recognition) recognition = setupSpeechRecognition();
+    if (recognition) {
+      try {
+        recognition.start();
+        micFloat.textContent = '🔴'; // indicate recording
+        textarea.classList.add('dictating');
+      } catch (e) { console.warn('recognition start failed', e); startAudioFallback(textarea); }
+    } else {
+      startAudioFallback(textarea);
+    }
+  }
+
+  async function startAudioFallback(textarea) {
+    try {
+      recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(recordingStream);
+      const chunks = [];
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        // save blob in IDB photos store as audio note (project-scoped)
+        const rec = { projectId: currentProjectId, dataUrl: await blobToDataURL(blob), originalName: 'voice_note.webm', createdAt: new Date().toISOString(), kind: 'audio' };
+        await idbAdd('photos', rec);
+        // Add a small placeholder note to textarea so user knows where audio is stored
+        textarea.value = (textarea.value ? textarea.value + '\n' : '') + '[Voice note saved offline]';
+        autoResize(textarea);
+        micFloat.textContent = '🎤';
+        if (recordingStream) {
+          recordingStream.getTracks().forEach(t => t.stop());
+          recordingStream = null;
+        }
+      };
+      mediaRecorder.start();
+      micFloat.textContent = '🔴';
+      textarea.classList.add('dictating');
+    } catch (e) {
+      alert('Audio capture failed: ' + e.message);
+    }
+  }
+
+  function stopDictation() {
+    if (recognition) {
+      try { recognition.stop(); } catch (e) {}
+      micFloat.textContent = '🎤';
+      if (currentDictateTarget) currentDictateTarget.classList.remove('dictating');
+      currentDictateTarget = null;
+    }
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+  }
+
+  function blobToDataURL(blob) {
+    return new Promise(res => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.readAsDataURL(blob);
+    });
+  }
+
+  // Show floating mic when a textarea is focused
+  function initVoiceUI() {
+    document.addEventListener('focusin', e => {
+      const ta = e.target;
+      if (ta && ta.classList && ta.classList.contains('auto-expand')) {
+        const rect = ta.getBoundingClientRect();
+        micFloat.style.top = (rect.top + window.scrollY + 8) + 'px';
+        micFloat.style.left = (rect.right - 40) + 'px';
+        micFloat.style.display = 'inline-block';
+        micFloat.onclick = () => {
+          if (currentDictateTarget) stopDictation();
+          else startDictationFor(ta);
+        };
+      }
+    });
+    document.addEventListener('focusout', e => {
+      // hide mic after short delay so user can click it
+      setTimeout(() => {
+        if (!currentDictateTarget) micFloat.style.display = 'none';
+      }, 250);
+    });
+  }
+
+  // ----- PDF export (jsPDF dynamic load) -----
+  async function loadJsPDF() {
+    // Try to import jspdf from CDN (the service worker caches it too)
+    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf;
+    try {
+      // load UMD bundle
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return window.jspdf;
+    } catch (e) {
+      console.warn('Failed to load jsPDF', e);
+      throw e;
+    }
+  }
+
+  async function generatePDF() {
+    try {
+      await saveProgress(true);
+      await loadJsPDF();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const state = gatherFormState();
+      let y = 40;
+      doc.setFontSize(14);
+      doc.text('Daily Water Quality Monitoring Report', 40, y); y += 24;
+      doc.setFontSize(10);
+      doc.text(`Project: ${state.fields.projName || ''}`, 40, y); y += 18;
+      doc.text(`Project Number: ${state.fields.projNum || ''}`, 40, y); y += 18;
+      doc.text(`Inspector: ${state.fields.inspName || ''}`, 40, y); y += 18;
+      doc.text(`Date of Sampling: ${state.fields.dateSampling || ''}`, 40, y); y += 24;
+
+      // Include objectives
+      doc.setFontSize(12); doc.text('Objectives:', 40, y); y += 18;
+      state.objectives.forEach((o, idx) => {
+        doc.setFontSize(10);
+        doc.text(`${idx+1}. ${o.param} — ${o.method || ''} — ${o.req || ''}`, 44, y); y += 14;
+      });
+
+      y += 8;
+      // Add photos (small thumbnails)
+      for (const p of state.photos || []) {
+        if (y + 170 > 800) { doc.addPage(); y = 40; }
+        try {
+          doc.addImage(p.src, 'JPEG', 40, y, 180, 120);
+          doc.text(p.comment || '', 230, y + 12);
+          y += 140;
+        } catch (e) { console.warn('Add image to PDF failed', e); }
+      }
+
+      // A simple save
+      doc.save(`${(state.fields.projName || 'report').replace(/[^\w]/g, '_')}_${new Date().toISOString().slice(0,19)}.pdf`);
+    } catch (e) {
+      alert('PDF generation failed: ' + e.message);
+    }
+  }
+
+  // triggerPrintOrPDF updated to prefer client PDF if jsPDF available; fall back to print
+  function triggerPrintOrPDF() {
+    // prefer client-side PDF if jsPDF can be loaded; otherwise print
+    loadJsPDF().then(() => generatePDF()).catch(() => { preparePrintView(); void document.body.offsetHeight; window.print(); });
+  }
+
+  // ----- Existing UI helpers (kept, possibly augmented) -----
   let sampleCount = 0;
   let logoDataUrl = "";
+  let canvas, ctx, drawing = false;
 
   function autoResize(textarea) {
     if (!textarea) return;
-    // Fix: Locks scroll position so the window doesn't jump to the top when height is evaluated
     const scrollPos = window.scrollY;
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
@@ -483,53 +1155,6 @@
     });
   }
 
-  function addSampleBlock() {
-    sampleCount++;
-    const container = document.getElementById('sampleLogsContainer');
-    const block = document.createElement('div');
-    block.className = 'sample-block';
-    block.id = `sample-block-${sampleCount}`;
-    block.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin: 4px 0; background: #e2e8f0; padding: 6px; border-radius: 4px;">
-        <strong>Sample Collection #${sampleCount}</strong>
-        <button class="btn btn-sm btn-danger no-print" type="button" onclick="this.closest('.sample-block').remove(); runExceedanceCheck();">Remove</button>
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 5%;">Row</th><th style="width: 25%;">Parameter</th><th style="width: 17%;">Downstream Result</th><th style="width: 17%;">Effluent Result</th><th style="width: 17%;">Upstream Result</th><th style="width: 13%;">Exceedance?</th><th class="no-print" style="width: 6%;">Action</th>
-            </tr>
-          </thead>
-          <tbody class="sample-param-tbody">
-            <tr class="time-row" style="background-color: #f8fafc;">
-              <td style="text-align:center; font-weight:bold;">Time</td>
-              <td><strong>Time (HHMM)</strong></td>
-              <td><input type="text" class="ds-time" placeholder="HHMM"></td>
-              <td><input type="text" class="eff-time" placeholder="HHMM"></td>
-              <td><input type="text" class="us-time" placeholder="HHMM"></td>
-              <td style="text-align:center;">-</td><td class="no-print"></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <button class="btn btn-sm no-print" type="button" onclick="addParamRowToSample(${sampleCount})" style="margin-top: 4px;">+ Add Parameter</button>
-      <div class="form-group full-width" style="margin-top: 8px;">
-        <label>Sample #${sampleCount} Comments *</label>
-        <textarea class="auto-expand sample-comment" rows="1" oninput="autoResize(this)" placeholder="Describe in-water work, exceedance causes, or corrective measures..."></textarea>
-      </div>
-    `;
-    container.appendChild(block);
-
-    const objRows = document.querySelectorAll('#objectivesTable tbody tr');
-    if (objRows.length > 0) {
-      objRows.forEach((oRow) => { addParamRowToSample(sampleCount, oRow.querySelector('.obj-param').value); });
-    } else {
-      addParamRowToSample(sampleCount, "Turbidity (NTU)");
-    }
-    initScrollFixForElements(block.querySelectorAll('textarea, input'));
-  }
-
   function addParamRowToSample(sampleNum, defaultParam = "") {
     const tbody = document.querySelector(`#sample-block-${sampleNum} .sample-param-tbody`);
     if (!tbody) return;
@@ -615,30 +1240,116 @@
     });
   }
 
-  function createPhotoCard(src, comment = "") {
-    const grid = document.getElementById('photoGrid');
-    const card = document.createElement('div');
-    card.className = 'photo-card';
-    card.innerHTML = `
-      <img src="${src}" alt="Site Photo" data-saved-src="${src}">
-      <textarea class="auto-expand photo-comment" rows="1" oninput="autoResize(this)" placeholder="Description / Location Comments...">${comment}</textarea>
-      <div class="photo-card-actions no-print"><button class="btn btn-sm btn-danger" type="button" onclick="this.closest('.photo-card').remove()">Delete Photo</button></div>
-    `;
-    grid.appendChild(card);
-    card.querySelectorAll('textarea').forEach(autoResize);
-    initScrollFixForElements(card.querySelectorAll('textarea'));
+  // ----- Form state gather / populate (made project aware) -----
+  function gatherFormState() {
+    return {
+      version: "1.1",
+      projectId: currentProjectId,
+      logoDataUrl: logoDataUrl,
+      sigDataUrl: canvas ? canvas.toDataURL() : "",
+      fields: {
+        projName: document.getElementById('projName').value, projNum: document.getElementById('projNum').value,
+        wdidNum: document.getElementById('wdidNum').value, projAddr: document.getElementById('projAddr').value,
+        projCoords: document.getElementById('projCoords').value, monBy: document.getElementById('monBy').value,
+        inspName: document.getElementById('inspName').value, dateSampling: document.getElementById('dateSampling').value,
+        dateCompleted: document.getElementById('dateCompleted').value, weatherAnt: document.getElementById('weatherAnt').value,
+        weatherCur: document.getElementById('weatherCur').value, weatherForecast: document.getElementById('weatherForecast').value,
+        weatherWind: document.getElementById('weatherWind').value, exceptionDoc: document.getElementById('exceptionDoc').value,
+        saOther: document.getElementById('saOther').value, pollutantDetails: document.getElementById('pollutantDetails').value,
+        part2Comments: document.getElementById('part2Comments').value
+      },
+      siteActivities: Array.from(document.getElementById('siteActivitySelect').selectedOptions).map(o => o.value),
+      visualInspectionYN: Array.from(document.querySelectorAll('#ynGrid select.yn-sel')).map(s => s.value),
+      locations: Array.from(document.querySelectorAll('#locationsTable tbody tr')).map(tr => {
+        const tas = tr.querySelectorAll('textarea'); return { loc: tas[0]?.value || '', coord: tas[1]?.value || '', desc: tas[2]?.value || '' };
+      }),
+      objectives: Array.from(document.querySelectorAll('#objectivesTable tbody tr')).map(tr => {
+        const tas = tr.querySelectorAll('textarea'); return { param: tas[0]?.value || '', method: tas[1]?.value || '', limit: tas[2]?.value || '', req: tas[3]?.value || '', type: tr.querySelector('.obj-type')?.value || 'pct_gt', val1: tr.querySelector('.obj-val1')?.value || '', val2: tr.querySelector('.obj-val2')?.value || '' };
+      }),
+      sampleBlocks: Array.from(document.querySelectorAll('.sample-block')).map(block => {
+        return {
+          time: { ds: block.querySelector('.ds-time')?.value || '', eff: block.querySelector('.eff-time')?.value || '', us: block.querySelector('.us-time')?.value || '' },
+          params: Array.from(block.querySelectorAll('tr.param-row')).map(pRow => {
+            return { name: pRow.querySelector('.param-name-input')?.value || '', ds: pRow.querySelector('.ds-input')?.value || '', eff: pRow.querySelector('.eff-input')?.value || '', us: pRow.querySelector('.us-input')?.value || '' };
+          }),
+          gps: { lat: block.dataset.lat || '', lon: block.dataset.lon || '' },
+          comment: block.querySelector('.sample-comment')?.value || ''
+        };
+      }),
+      photos: Array.from(document.querySelectorAll('#photoGrid .photo-card')).map(card => {
+        return { src: card.querySelector('img').getAttribute('data-saved-src') || card.querySelector('img').src, comment: card.querySelector('.photo-comment')?.value || '' };
+      })
+    };
   }
 
-  function handlePhotoUpload(event) {
-    Array.from(event.target.files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = e => createPhotoCard(e.target.result);
-      reader.readAsDataURL(file);
+  function populateFromMasterData(data) {
+    if (data.logoDataUrl) { logoDataUrl = data.logoDataUrl; document.getElementById('headerLogoDisplay').src = logoDataUrl; document.getElementById('headerLogoDisplay').style.display = 'block'; } 
+    else { logoDataUrl = ""; document.getElementById('headerLogoDisplay').style.display = 'none'; }
+    if (data.fields) Object.keys(data.fields).forEach(key => { const el = document.getElementById(key); if (el) { el.value = data.fields[key]; autoResize(el); } });
+    if (data.siteActivities) Array.from(document.getElementById('siteActivitySelect').options).forEach(opt => opt.selected = data.siteActivities.includes(opt.value));
+    if (data.visualInspectionYN) { const selects = document.querySelectorAll('#ynGrid select.yn-sel'); data.visualInspectionYN.forEach((val, i) => { if (selects[i]) selects[i].value = val; }); }
+    if (data.locations) { document.querySelector('#locationsTable tbody').innerHTML = ''; data.locations.forEach(l => addLocationRow(l.loc, l.coord, l.desc)); }
+    if (data.objectives) { document.querySelector('#objectivesTable tbody').innerHTML = ''; data.objectives.forEach(o => addObjectiveRow(o.param, o.method, o.limit, o.req, o.type, o.val1, o.val2)); }
+    if (data.sampleBlocks) {
+      document.getElementById('sampleLogsContainer').innerHTML = ''; sampleCount = 0;
+      data.sampleBlocks.forEach(sData => {
+        addSampleBlock(); const currentBlock = document.getElementById(`sample-block-${sampleCount}`);
+        if (sData.time) { currentBlock.querySelector('.ds-time').value = sData.time.ds || ''; currentBlock.querySelector('.eff-time').value = sData.time.eff || ''; currentBlock.querySelector('.us-time').value = sData.time.us || ''; }
+        const tbody = currentBlock.querySelector('.sample-param-tbody'); tbody.querySelectorAll('tr.param-row').forEach(r => r.remove());
+        if (sData.params) sData.params.forEach(p => {
+          addParamRowToSample(sampleCount, p.name); const pRows = tbody.querySelectorAll('tr.param-row'); const lastRow = pRows[pRows.length - 1];
+          if (lastRow) { lastRow.querySelector('.ds-input').value = p.ds || ''; lastRow.querySelector('.eff-input').value = p.eff || ''; lastRow.querySelector('.us-input').value = p.us || ''; }
+        });
+        if (sData.comment) { const cTa = currentBlock.querySelector('.sample-comment'); cTa.value = sData.comment; autoResize(cTa); }
+        if (sData.gps) { currentBlock.dataset.lat = sData.gps.lat || ''; currentBlock.dataset.lon = sData.gps.lon || ''; const badge = document.getElementById(`coord-${sampleCount}`); if (badge && sData.gps.lat) { badge.style.display='inline-block'; badge.textContent = `${parseFloat(sData.gps.lat).toFixed(5)}, ${parseFloat(sData.gps.lon).toFixed(5)}`; } }
+      });
+    }
+    if (data.photos) { document.getElementById('photoGrid').innerHTML = ''; data.photos.forEach(p => createPhotoCard(p.src, p.comment)); }
+    if (data.sigDataUrl && canvas && ctx) { clearSignature(); const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = data.sigDataUrl; }
+    runExceedanceCheck();
+  }
+
+  function clearToBlankTemplate() {
+    if (!confirm("Clear all project information and reset to a blank master template?")) return;
+    localStorage.removeItem(autosaveKey(currentProjectId));
+    document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea').forEach(i => { i.value = ''; i.textContent = ''; });
+    document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+    document.querySelector('#locationsTable tbody').innerHTML = ''; document.querySelector('#objectivesTable tbody').innerHTML = '';
+    document.getElementById('sampleLogsContainer').innerHTML = ''; document.getElementById('photoGrid').innerHTML = ''; clearSignature();
+    addLocationRow("Upstream", "", ""); addLocationRow("Effluent", "", ""); addLocationRow("Downstream", "", "");
+    addObjectiveRow("Turbidity (NTU)", "Field Meter", "1 NTU", "< 20% Increase", "pct_gt", "20");
+    addObjectiveRow("pH", "Field Meter", "0.1 pH", "6.5 - 8.5", "val_between", "6.5", "8.5");
+    addSampleBlock();
+  }
+
+  // Scroll jump prevention focus binding helper
+  function initScrollFixForElements(elements) {
+    elements.forEach(input => {
+      input.addEventListener('focus', function() {
+        setTimeout(() => {
+          document.body.style.paddingBottom = '320px';
+          this.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }, 300);
+      });
+
+      input.addEventListener('blur', function() {
+        document.body.style.paddingBottom = '0px';
+      });
     });
-    event.target.value = '';
   }
 
-  let canvas, ctx, drawing = false;
+  function initScrollFix() {
+    const textInputs = document.querySelectorAll('textarea, input[type="text"], input[type="number"], input[type="date"], select');
+    initScrollFixForElements(textInputs);
+  }
+
+  window.onbeforeprint = preparePrintView;
+
+  // Fix: Save initial window width to prevent height-only resize triggers (like keyboards)
+  let lastWindowWidth = window.innerWidth;
 
   function initSignatureCanvas() {
     canvas = document.getElementById('sigCanvas');
@@ -687,72 +1398,6 @@
     });
   }
 
-  function triggerPrintOrPDF() {
-    preparePrintView();
-    void document.body.offsetHeight; 
-    window.print();
-  }
-
-  function gatherFormState() {
-    return {
-      version: "1.0", logoDataUrl: logoDataUrl, sigDataUrl: canvas ? canvas.toDataURL() : "",
-      fields: {
-        projName: document.getElementById('projName').value, projNum: document.getElementById('projNum').value,
-        wdidNum: document.getElementById('wdidNum').value, projAddr: document.getElementById('projAddr').value,
-        projCoords: document.getElementById('projCoords').value, monBy: document.getElementById('monBy').value,
-        inspName: document.getElementById('inspName').value, dateSampling: document.getElementById('dateSampling').value,
-        dateCompleted: document.getElementById('dateCompleted').value, weatherAnt: document.getElementById('weatherAnt').value,
-        weatherCur: document.getElementById('weatherCur').value, weatherForecast: document.getElementById('weatherForecast').value,
-        weatherWind: document.getElementById('weatherWind').value, exceptionDoc: document.getElementById('exceptionDoc').value,
-        saOther: document.getElementById('saOther').value, pollutantDetails: document.getElementById('pollutantDetails').value,
-        part2Comments: document.getElementById('part2Comments').value
-      },
-      siteActivities: Array.from(document.getElementById('siteActivitySelect').selectedOptions).map(o => o.value),
-      visualInspectionYN: Array.from(document.querySelectorAll('#ynGrid select.yn-sel')).map(s => s.value),
-      locations: Array.from(document.querySelectorAll('#locationsTable tbody tr')).map(tr => {
-        const tas = tr.querySelectorAll('textarea'); return { loc: tas[0]?.value || '', coord: tas[1]?.value || '', desc: tas[2]?.value || '' };
-      }),
-      objectives: Array.from(document.querySelectorAll('#objectivesTable tbody tr')).map(tr => {
-        const tas = tr.querySelectorAll('textarea'); return { param: tas[0]?.value || '', method: tas[1]?.value || '', limit: tas[2]?.value || '', req: tas[3]?.value || '', type: tr.querySelector('.obj-type')?.value || 'pct_gt', val1: tr.querySelector('.obj-val1')?.value || '', val2: tr.querySelector('.obj-val2')?.value || '' };
-      }),
-      sampleBlocks: Array.from(document.querySelectorAll('.sample-block')).map(block => {
-        return {
-          time: { ds: block.querySelector('.ds-time')?.value || '', eff: block.querySelector('.eff-time')?.value || '', us: block.querySelector('.us-time')?.value || '' },
-          params: Array.from(block.querySelectorAll('tr.param-row')).map(pRow => {
-            return { name: pRow.querySelector('.param-name-input')?.value || '', ds: pRow.querySelector('.ds-input')?.value || '', eff: pRow.querySelector('.eff-input')?.value || '', us: pRow.querySelector('.us-input')?.value || '' };
-          }),
-          comment: block.querySelector('.sample-comment')?.value || ''
-        };
-      }),
-      photos: Array.from(document.querySelectorAll('#photoGrid .photo-card')).map(card => {
-        return { src: card.querySelector('img').getAttribute('data-saved-src') || card.querySelector('img').src, comment: card.querySelector('.photo-comment')?.value || '' };
-      })
-    };
-  }
-
-  function saveProgress(isAuto = false) {
-    try {
-      localStorage.setItem('water_quality_report_autosave', JSON.stringify(gatherFormState()));
-      const indicator = document.getElementById('saveStatusIndicator');
-      if (indicator && !isAuto) {
-        const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        indicator.textContent = `Progress saved (${timeString})`;
-        setTimeout(() => { if (indicator.textContent.includes(timeString)) indicator.textContent = ''; }, 4000);
-      }
-    } catch (e) { console.warn("Storage quota or error saving progress: ", e); }
-  }
-
-  function manualSaveProgress() { saveProgress(false); }
-
-  function loadSavedProgress() {
-    const savedData = localStorage.getItem('water_quality_report_autosave');
-    if (savedData) {
-      try { populateFromMasterData(JSON.parse(savedData)); return true; } 
-      catch (e) { console.error("Error loading autosaved progress:", e); }
-    }
-    return false;
-  }
-
   function downloadMasterTemplate() {
     const blob = new Blob([JSON.stringify(gatherFormState(), null, 2)], { type: "application/json" });
     const fileName = `Master_Template_${(document.getElementById('projName').value || "Template").replace(/[^a-z0-9]/gi, '_')}.json`;
@@ -769,84 +1414,141 @@
     reader.readAsText(file); event.target.value = '';
   }
 
-  function populateFromMasterData(data) {
-    if (data.logoDataUrl) { logoDataUrl = data.logoDataUrl; document.getElementById('headerLogoDisplay').src = logoDataUrl; document.getElementById('headerLogoDisplay').style.display = 'block'; } 
-    else { logoDataUrl = ""; document.getElementById('headerLogoDisplay').style.display = 'none'; }
-    if (data.fields) Object.keys(data.fields).forEach(key => { const el = document.getElementById(key); if (el) { el.value = data.fields[key]; autoResize(el); } });
-    if (data.siteActivities) Array.from(document.getElementById('siteActivitySelect').options).forEach(opt => opt.selected = data.siteActivities.includes(opt.value));
-    if (data.visualInspectionYN) { const selects = document.querySelectorAll('#ynGrid select.yn-sel'); data.visualInspectionYN.forEach((val, i) => { if (selects[i]) selects[i].value = val; }); }
-    if (data.locations) { document.querySelector('#locationsTable tbody').innerHTML = ''; data.locations.forEach(l => addLocationRow(l.loc, l.coord, l.desc)); }
-    if (data.objectives) { document.querySelector('#objectivesTable tbody').innerHTML = ''; data.objectives.forEach(o => addObjectiveRow(o.param, o.method, o.limit, o.req, o.type, o.val1, o.val2)); }
-    if (data.sampleBlocks) {
-      document.getElementById('sampleLogsContainer').innerHTML = ''; sampleCount = 0;
-      data.sampleBlocks.forEach(sData => {
-        addSampleBlock(); const currentBlock = document.getElementById(`sample-block-${sampleCount}`);
-        if (sData.time) { currentBlock.querySelector('.ds-time').value = sData.time.ds || ''; currentBlock.querySelector('.eff-time').value = sData.time.eff || ''; currentBlock.querySelector('.us-time').value = sData.time.us || ''; }
-        const tbody = currentBlock.querySelector('.sample-param-tbody'); tbody.querySelectorAll('tr.param-row').forEach(r => r.remove());
-        if (sData.params) sData.params.forEach(p => {
-          addParamRowToSample(sampleCount, p.name); const pRows = tbody.querySelectorAll('tr.param-row'); const lastRow = pRows[pRows.length - 1];
-          if (lastRow) { lastRow.querySelector('.ds-input').value = p.ds || ''; lastRow.querySelector('.eff-input').value = p.eff || ''; lastRow.querySelector('.us-input').value = p.us || ''; }
-        });
-        if (sData.comment) { const cTa = currentBlock.querySelector('.sample-comment'); cTa.value = sData.comment; autoResize(cTa); }
-      });
-    }
-    if (data.photos) { document.getElementById('photoGrid').innerHTML = ''; data.photos.forEach(p => createPhotoCard(p.src, p.comment)); }
-    if (data.sigDataUrl && canvas && ctx) { clearSignature(); const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = data.sigDataUrl; }
-    runExceedanceCheck();
-  }
-
-  function clearToBlankTemplate() {
-    if (!confirm("Clear all project information and reset to a blank master template?")) return;
-    localStorage.removeItem('water_quality_report_autosave');
-    document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea').forEach(i => { i.value = ''; i.textContent = ''; });
-    document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
-    document.querySelector('#locationsTable tbody').innerHTML = ''; document.querySelector('#objectivesTable tbody').innerHTML = '';
-    document.getElementById('sampleLogsContainer').innerHTML = ''; document.getElementById('photoGrid').innerHTML = ''; clearSignature();
-    addLocationRow("Upstream", "", ""); addLocationRow("Effluent", "", ""); addLocationRow("Downstream", "", "");
-    addObjectiveRow("Turbidity (NTU)", "Field Meter", "1 NTU", "< 20% Increase", "pct_gt", "20");
-    addObjectiveRow("pH", "Field Meter", "0.1 pH", "6.5 - 8.5", "val_between", "6.5", "8.5");
-    addSampleBlock();
-  }
-
-  // Scroll jump prevention focus binding helper
-  function initScrollFixForElements(elements) {
-    elements.forEach(input => {
-      input.addEventListener('focus', function() {
-        setTimeout(() => {
-          document.body.style.paddingBottom = '320px';
-          this.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }, 300);
-      });
-
-      input.addEventListener('blur', function() {
-        document.body.style.paddingBottom = '0px';
-      });
+  // ----- Service Worker: inline fallback script (best-effort registration) -----
+  // A minimal service worker script is created here as swCode and will be registered if 'sw.js' not found.
+  const swCode = `
+    const CACHE_NAME = 'wq-static-v1';
+    const ASSETS_TO_CACHE = [
+      '/', // fallback; adjust as needed
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+    ];
+    self.addEventListener('install', e => {
+      e.waitUntil(
+        caches.open(CACHE_NAME).then(c => c.addAll(ASSETS_TO_CACHE)).catch(()=>{})
+      );
+      self.skipWaiting();
     });
+    self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+
+    // Basic fetch handler to serve cached jsPDF (and other assets) offline
+    self.addEventListener('fetch', event => {
+      event.respondWith(
+        caches.match(event.request).then(cached => cached || fetch(event.request).catch(()=>cached))
+      );
+    });
+
+    // Background sync handler will attempt to upload queued reports from IndexedDB
+    self.addEventListener('sync', function(event) {
+      if (!event.tag || !event.tag.startsWith('wq-sync-')) return;
+      event.waitUntil((async () => {
+        // open indexedDB in worker and attempt to upload queued reports
+        function openDB() {
+          return new Promise((resolve, reject) => {
+            const r = indexedDB.open('${DB_NAME}', ${DB_VERSION});
+            r.onsuccess = () => resolve(r.result);
+            r.onerror = () => reject(r.error);
+          });
+        }
+        try {
+          const db = await openDB();
+          const tx = db.transaction('reports_queue', 'readwrite');
+          const st = tx.objectStore('reports_queue');
+          const idx = st.index('projectId');
+          const req = idx.getAll(event.tag.replace('wq-sync-', ''));
+          req.onsuccess = async () => {
+            const items = req.result || [];
+            for (const item of items) {
+              try {
+                // Attempt upload (replace endpoint accordingly)
+                await fetch('/upload-report', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(item)
+                });
+                st.delete(item.qid);
+              } catch (err) {
+                // If network fails, leave in queue
+                console.error('SW upload failed', err);
+                throw err;
+              }
+            }
+            // notify clients about sync success
+            const clients = await self.clients.matchAll();
+            for (const c of clients) c.postMessage({ type: 'wq-sync-complete', projectId: event.tag.replace('wq-sync-', '') });
+          };
+          req.onerror = () => { /* ignore */ };
+        } catch (e) {
+          console.error('Background sync failed in SW', e);
+        }
+      })());
+    });
+
+    // Listen for messages from page (for manual sync requests)
+    self.addEventListener('message', e => {
+      if (e.data && e.data.type === 'wq-try-sync') {
+        self.registration.sync && self.registration.sync.register('wq-sync-' + e.data.projectId).catch(()=>{});
+      }
+    });
+  `;
+
+  async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+      // Try to register /sw.js (existing file) first to preserve existing behavior
+      const reg = await navigator.serviceWorker.register('sw.js').catch(() => null);
+      if (!reg) {
+        // fallback: register inline blob SW (may be blocked in some browsers)
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        await navigator.serviceWorker.register(swUrl);
+      }
+      // Listen for messages from SW
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data && e.data.type === 'wq-sync-complete') {
+          if (e.data.projectId === currentProjectId) {
+            setSyncStatus('synced');
+            // attempt to clear any queued items now from main thread too
+            attemptSyncQueue().catch(()=>{});
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Service worker registration failed', e);
+    }
   }
 
-  function initScrollFix() {
-    const textInputs = document.querySelectorAll('textarea, input[type="text"], input[type="number"], input[type="date"], select');
-    initScrollFixForElements(textInputs);
-  }
+  // ----- before unload: autosave per project -----
+  window.addEventListener('beforeunload', () => saveProgress(true));
+  window.addEventListener('online', () => { attemptSyncQueue().catch(()=>{}); });
+  window.addEventListener('offline', () => setSyncStatus('pending'));
 
-  window.onbeforeprint = preparePrintView;
-
-  // Fix: Save initial window width to prevent height-only resize triggers (like keyboards)
-  let lastWindowWidth = window.innerWidth;
-
-  window.onload = () => {
+  // ----- Initialization -----
+  window.onload = async () => {
     initSignatureCanvas();
-    if (!loadSavedProgress() && document.querySelectorAll('.sample-block').length === 0) addSampleBlock();
+    populateProjectSelector();
+    // Load the current project's saved data
+    if (!loadSavedProgressForProject() && document.querySelectorAll('.sample-block').length === 0) addSampleBlock();
     document.querySelectorAll('textarea').forEach(autoResize);
     initScrollFix();
-
+    initVoiceUI();
+    // if no projects exist, add default
+    const list = loadProjectList();
+    if (!list || list.length === 0) { saveProjectList([{id:'default_project', name:'Default Project'}]); populateProjectSelector(); }
+    // Auto-save every 15s
     setInterval(() => saveProgress(true), 15000);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === 'hidden') saveProgress(true);
-    });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === 'hidden') saveProgress(true); });
+
+    // Setup voice recognition
+    recognition = setupSpeechRecognition();
+
+    // Attempt SW registration
+    await registerServiceWorker();
+
+    // Set initial sync status
+    setSyncStatus('local');
+
+    // Bind sample add if none
+    if (document.querySelectorAll('.sample-block').length === 0) addSampleBlock();
   };
 
   window.onresize = () => {
@@ -857,14 +1559,29 @@
     const scrollPos = window.scrollY;
 
     if (canvas) {
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
-      ctx.putImageData(imgData, 0, 0); ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2; ctx.lineCap = "round";
+      try {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
+        ctx.putImageData(imgData, 0, 0); ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2; ctx.lineCap = "round";
+      } catch (e) {
+        // if canvas data can't be preserved at this resize, just reinitialize
+        initSignatureCanvas();
+      }
     }
     document.querySelectorAll('textarea').forEach(autoResize);
     
     window.scrollTo(window.scrollX, scrollPos);
   };
+
+  // ----- Utility: small UI actions to test queue / sync -----
+  // Expose queue submission button for quick manual submission
+  // (You can wire this to a visible button in the UI in future.)
+  window.queueReportForCurrent = async function() {
+    const st = gatherFormState();
+    await queueReport(st);
+    alert('Report queued for project ' + currentProjectId);
+  };
+
 </script>
 </body>
 </html>
