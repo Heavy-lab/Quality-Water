@@ -2,13 +2,22 @@
 <html lang="en">
 <head>
   <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- Apple/iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Water Report">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
   <title>Daily Water Quality Monitoring Report</title>
   <style>
     :root {
@@ -177,9 +186,7 @@
         </div>
         <button class="btn btn-success" type="button" onclick="downloadMasterTemplate()">Download Template</button>
         <button class="btn btn-secondary" type="button" onclick="document.getElementById('masterFileInput').click()">Upload Template</button>
-        <input type="file" id="masterFileInput" accept=".json,.html" style="display:none;" onchange="uploadMasterTemplate(event)">
-        <button class="btn btn-secondary" type="button" onclick="clearToBlankTemplate()">Clear Form</button>
-        <button class="btn" type="button" onclick="triggerPrintOrPDF()">Print / Save PDF</button>
+        <input type="file" id="masterFileInput" accept=".json" style="display:none;" onchange="uploadMasterTemplate(event)">
       </div>
     </div>
 
