@@ -27,6 +27,78 @@
       --warning: #d97706;
       --muted: #475569;
     }
+/* --- Site Map / Annotation additions --- */
+.map-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 8px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.map-canvas-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  touch-action: manipulation;
+}
+
+.map-canvas-wrap img {
+  max-width: 100%;
+  display: block;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px 4px 4px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  z-index: 5;
+}
+.map-marker::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: -6px;
+  border: 6px solid transparent;
+  border-top-color: var(--danger);
+}
+
+.map-marker-popup {
+  position: absolute;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  padding: 8px;
+  width: 220px;
+  display: none;
+}
+.map-marker-popup.active { display: block; }
+.map-marker-popup img { width: 100%; border-radius: 4px; margin-top: 6px; }
+.map-marker-popup .close-x { position:absolute; top:4px; right:6px; cursor:pointer; font-weight:bold; color: var(--muted); }
+
+.origin-controls { display:flex; gap:8px; flex-wrap:wrap; margin: 6px 0; }
+.origin-status { font-size:0.8rem; color: var(--muted); }
+
+.ca-legend-table { width:100%; border-collapse: collapse; margin-top: 10px; font-size:0.85rem; }
+.ca-legend-table th, .ca-legend-table td { border:1px solid var(--border); padding:4px 6px; }
+
+@media print {
+  .map-marker-popup { display: none !important; }
+  .map-card { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .ca-legend-table { page-break-inside: auto !important; }
+}
 
     * {
       box-sizing: border-box;
@@ -445,6 +517,24 @@
           <label for="projCoords">Approximate Coordinates</label>
           <textarea id="projCoords">37.188745, -122.143153</textarea>
         </div>
+<div class="section-block" style="page-break-inside: auto;">
+  <div class="section-title">Site Drawings / Maps</div>
+
+  <div class="no-print" style="margin-bottom: 8px;">
+    <label>Upload Site Drawing/Map:</label><br>
+    <input type="file" id="mapUpload" accept="image/*" multiple onchange="handleMapUpload(event)">
+  </div>
+
+  <div id="mapGrid"></div>
+
+  <div id="caLegendWrap" style="margin-top:14px;">
+    <div class="section-title" style="font-size:0.9rem;">Corrective Actions Legend</div>
+    <table class="ca-legend-table" id="caLegendTable">
+      <thead><tr><th>Code</th><th>Description</th><th>Map</th><th>Linked Photos</th></tr></thead>
+      <tbody id="caLegendBody"></tbody>
+    </table>
+  </div>
+</div>
 
         <div class="form-group">
           <label for="monBy">Monitoring Performed By</label>
@@ -625,6 +715,304 @@
         return [{ id: DEFAULT_PROJECT, name: "Default Project" }];
       }
     }
+// ---------- Site Map / Annotation Module ----------
+let mapsCache = {}; // { mapId: { dataUrl, origin:{px,py,lat,lon}, ref2:{...}, annotations:[...] } }
+const CA_CODES = ["CA-1 SC-1","CA-1 SC-5","CA-1 SC-7","CA-1 SC-10","CT-1 WM-1","CT-1 SC-3"]; // extend as needed
+
+// -- Upload & compress (reuses existing compressImageFile) --
+async function handleMapUpload(event) {
+  const files = Array.from(event.target.files || []);
+  for (const file of files) {
+    const dataUrl = await compressImageFile(file, 1600, 0.82); // reuse existing compressor
+    const mapId = 'map_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    const record = { id: mapId, dataUrl, origin: null, ref2: null, annotations: [] };
+    mapsCache[mapId] = record;
+    await saveMapToIDB(currentProjectId, record); // new 'maps' IDB store
+    renderMapCard(record);
+  }
+  event.target.value = '';
+}
+
+// -- IndexedDB (new 'maps' store, same DB as photos) --
+function saveMapToIDB(projectId, record) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('maps', 'readwrite');
+    tx.objectStore('maps').put({ ...record, projectId });
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
+  });
+}
+
+function loadMapsForProject(projectId) {
+  return new Promise((resolve) => {
+    const tx = db.transaction('maps', 'readonly');
+    const store = tx.objectStore('maps');
+    const results = [];
+    store.openCursor().onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        if (cursor.value.projectId === projectId) results.push(cursor.value);
+        cursor.continue();
+      } else {
+        resolve(results);
+      }
+    };
+  });
+}
+
+// -- Render map card with overlay markers --
+function renderMapCard(record) {
+  const grid = document.getElementById('mapGrid');
+  let card = document.getElementById('cardfor_' + record.id);
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'map-card';
+    card.id = 'cardfor_' + record.id;
+    grid.appendChild(card);
+  }
+  card.innerHTML = `
+    <div class="origin-controls no-print">
+      <button class="btn btn-sm" onclick="startOriginCapture('${record.id}')">Set Origin Point</button>
+      <button class="btn btn-sm btn-secondary" onclick="startSecondRefCapture('${record.id}')">Set 2nd Reference (Scale/Rotation)</button>
+      <span class="origin-status" id="originStatus_${record.id}">
+        ${record.origin ? 'Origin set: ' + record.origin.lat.toFixed(5) + ',' + record.origin.lon.toFixed(5) : 'No origin set'}
+      </span>
+    </div>
+    <div class="map-canvas-wrap" id="wrap_${record.id}" onclick="handleMapClick(event,'${record.id}')">
+      <img src="${record.dataUrl}" id="img_${record.id}">
+    </div>
+  `;
+  renderMarkersForMap(record);
+}
+
+// -- Origin point capture (reuses manual lat/lon prompt pattern from captureGPSFallback) --
+function startOriginCapture(mapId) {
+  const wrap = document.getElementById('wrap_' + mapId);
+  const handler = (e) => {
+    const rect = wrap.getBoundingClientRect();
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    const coordStr = prompt('Enter Google Maps coordinate for this point (lat,lon):', '');
+    if (coordStr && coordStr.includes(',')) {
+      const [lat, lon] = coordStr.split(',').map(s => parseFloat(s.trim()));
+      mapsCache[mapId].origin = { px, py, lat, lon };
+      saveMapToIDB(currentProjectId, mapsCache[mapId]);
+      document.getElementById('originStatus_' + mapId).textContent =
+        `Origin set: ${lat.toFixed(5)},${lon.toFixed(5)}`;
+    }
+    wrap.removeEventListener('click', handler, true);
+  };
+  wrap.addEventListener('click', handler, true);
+  alert('Click the point on the map that matches your known GPS coordinate.');
+}
+
+function startSecondRefCapture(mapId) {
+  const wrap = document.getElementById('wrap_' + mapId);
+  const handler = (e) => {
+    const rect = wrap.getBoundingClientRect();
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    const coordStr = prompt('Enter Google Maps coordinate for this second reference point (lat,lon):', '');
+    if (coordStr && coordStr.includes(',')) {
+      const [lat, lon] = coordStr.split(',').map(s => parseFloat(s.trim()));
+      mapsCache[mapId].ref2 = { px, py, lat, lon };
+      saveMapToIDB(currentProjectId, mapsCache[mapId]);
+    }
+    wrap.removeEventListener('click', handler, true);
+  };
+  wrap.addEventListener('click', handler, true);
+  alert('Click a second known reference point (used to compute scale + rotation).');
+}
+
+// -- Affine transform: geo -> pixel, using origin + ref2 --
+function geoToPixel(record, lat, lon) {
+  const o = record.origin;
+  if (!o) return null;
+  if (!record.ref2) {
+    // translation-only fallback (no rotation/scale data)
+    const metersPerDegLat = 111320;
+    const metersPerDegLon = 111320 * Math.cos(o.lat * Math.PI / 180);
+    const dx = (lon - o.lon) * metersPerDegLon;
+    const dy = (o.lat - lat) * metersPerDegLat;
+    const pxPerMeter = 2; // rough default scale if uncalibrated
+    return { x: o.px + dx * pxPerMeter, y: o.py + dy * pxPerMeter };
+  }
+  // full affine using two reference points (scale + rotation)
+  const r = record.ref2;
+  const geoDX = r.lon - o.lon, geoDY = r.lat - o.lat;
+  const pxDX = r.px - o.px, pxDY = r.py - o.py;
+  const geoAngle = Math.atan2(geoDY, geoDX);
+  const pxAngle = Math.atan2(pxDY, pxDX);
+  const rotation = pxAngle - geoAngle;
+  const geoDist = Math.hypot(geoDX, geoDY);
+  const pxDist = Math.hypot(pxDX, pxDY);
+  const scale = pxDist / geoDist;
+
+  const dLon = lon - o.lon, dLat = lat - o.lat;
+  const rx = dLon * Math.cos(rotation) - dLat * Math.sin(rotation);
+  const ry = dLon * Math.sin(rotation) + dLat * Math.cos(rotation);
+  return { x: o.px + rx * scale, y: o.py + ry * scale };
+}
+
+// -- Click-to-annotate on map --
+function handleMapClick(e, mapId) {
+  if (e.target.closest('.map-marker')) return; // ignore clicks on existing markers
+  const wrap = document.getElementById('wrap_' + mapId);
+  const rect = wrap.getBoundingClientRect();
+  const px = e.clientX - rect.left, py = e.clientY - rect.top;
+  openAnnotationForm(mapId, px, py);
+}
+
+function openAnnotationForm(mapId, px, py) {
+  const code = prompt('Enter BMP Corrective Action (e.g. "CA-1 SC-7 Street Sweeping"):', '');
+  if (!code) return;
+  const photoIds = promptLinkPhotos();
+  const annotation = { id: 'ann_' + Date.now(), code, px, py, photoIds, geo: null };
+  const record = mapsCache[mapId];
+  record.annotations.push(annotation);
+  saveMapToIDB(currentProjectId, record);
+  renderMarkersForMap(record);
+  refreshCALegend();
+}
+
+function promptLinkPhotos() {
+  // Reuses existing photoGrid photo-card structure to build a checklist
+  const cards = Array.from(document.querySelectorAll('#photoGrid .photo-card'));
+  if (cards.length === 0) return [];
+  const list = cards.map((c, i) => `${i + 1}: ${c.dataset.photoId || '(untitled)'}`).join('\n');
+  const chosen = prompt(`Enter photo numbers to link (comma-separated):\n${list}`, '');
+  if (!chosen) return [];
+  return chosen.split(',').map(s => cards[parseInt(s.trim()) - 1]?.dataset.photoId).filter(Boolean);
+}
+
+// -- Render markers, preferring GPS-derived position over manual pixel click --
+function renderMarkersForMap(record) {
+  const wrap = document.getElementById('wrap_' + record.id);
+  wrap.querySelectorAll('.map-marker, .map-marker-popup').forEach(el => el.remove());
+
+  record.annotations.forEach(ann => {
+    let pos = { x: ann.px, y: ann.py };
+
+    // Prefer EXIF GPS (captured pre-compression) of first linked photo, if available + origin is set
+    const linkedGps = getPhotoGPS(ann.photoIds && ann.photoIds[0]);
+    if (linkedGps && record.origin) {
+      const p = geoToPixel(record, linkedGps.lat, linkedGps.lon);
+      if (p) pos = p;
+    }
+
+    const marker = document.createElement('div');
+    marker.className = 'map-marker';
+    marker.style.left = pos.x + 'px';
+    marker.style.top = pos.y + 'px';
+    marker.textContent = ann.code;
+    marker.onclick = (e) => { e.stopPropagation(); toggleMarkerPopup(record.id, ann.id, pos); };
+    wrap.appendChild(marker);
+
+    const popup = document.createElement('div');
+    popup.className = 'map-marker-popup';
+    popup.id = `popup_${record.id}_${ann.id}`;
+    popup.style.left = (pos.x + 10) + 'px';
+    popup.style.top = pos.y + 'px';
+    popup.innerHTML = `
+      <span class="close-x" onclick="event.stopPropagation(); this.parentElement.classList.remove('active')">&times;</span>
+      <strong>${ann.code}</strong>
+      ${(ann.photoIds || []).map(pid => {
+        const url = getPhotoDataUrl(pid);
+        return url ? `<img src="${url}">` : '';
+      }).join('')}
+    `;
+    wrap.appendChild(popup);
+  });
+}
+
+function toggleMarkerPopup(mapId, annId, pos) {
+  document.querySelectorAll('.map-marker-popup.active').forEach(p => p.classList.remove('active'));
+  const popup = document.getElementById(`popup_${mapId}_${annId}`);
+  if (popup) popup.classList.add('active');
+}
+
+// -- Helpers linking to existing photo store --
+function getPhotoDataUrl(photoId) {
+  const card = document.querySelector(`.photo-card[data-photo-id="${photoId}"]`);
+  return card ? card.querySelector('img')?.src : null;
+}
+
+function getPhotoGPS(photoId) {
+  if (!photoId) return null;
+  const card = document.querySelector(`.photo-card[data-photo-id="${photoId}"]`);
+  if (card && card.dataset.lat && card.dataset.lon) {
+    return { lat: parseFloat(card.dataset.lat), lon: parseFloat(card.dataset.lon) };
+  }
+  return null; // falls back to manual px placement (handled in renderMarkersForMap)
+}
+
+// -- Pre-compression EXIF GPS extraction (must run BEFORE compressImageFile strips metadata) --
+async function extractExifGPS(file) {
+  return new Promise((resolve) => {
+    if (typeof EXIF === 'undefined') { resolve(null); return; } // exif-js loaded via CDN
+    EXIF.getData(file, function () {
+      const lat = EXIF.getTag(this, 'GPSLatitude');
+      const lon = EXIF.getTag(this, 'GPSLongitude');
+      const latRef = EXIF.getTag(this, 'GPSLatitudeRef');
+      const lonRef = EXIF.getTag(this, 'GPSLongitudeRef');
+      if (!lat || !lon) { resolve(null); return; }
+      const toDecimal = (dms, ref) => {
+        let dd = dms[0] + dms[1] / 60 + dms[2] / 3600;
+        if (ref === 'S' || ref === 'W') dd *= -1;
+        return dd;
+      };
+      resolve({ lat: toDecimal(lat, latRef), lon: toDecimal(lon, lonRef) });
+    });
+  });
+}
+
+// -- Legend/table for print + PDF --
+function refreshCALegend() {
+  const body = document.getElementById('caLegendBody');
+  body.innerHTML = '';
+  Object.values(mapsCache).forEach(record => {
+    record.annotations.forEach(ann => {
+      const tr = document.createElement('tr');
+      const thumbs = (ann.photoIds || []).map(pid => {
+        const url = getPhotoDataUrl(pid);
+        return url ? `<img src="${url}" style="width:40px;height:auto;margin-right:4px;">` : '';
+      }).join('');
+      tr.innerHTML = `<td>${ann.code.split(' ')[0]}</td><td>${ann.code}</td><td>${record.id}</td><td>${thumbs}</td>`;
+      body.appendChild(tr);
+    });
+  });
+}
+
+// -- Flatten map + markers into a single image for PDF insertion --
+async function flattenMapForPDF(record) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const wrap = document.getElementById('wrap_' + record.id);
+      const scaleX = img.width / wrap.clientWidth;
+      const scaleY = img.height / wrap.clientHeight;
+
+      record.annotations.forEach(ann => {
+        let pos = { x: ann.px, y: ann.py };
+        const linkedGps = getPhotoGPS(ann.photoIds && ann.photoIds[0]);
+        if (linkedGps && record.origin) {
+          const p = geoToPixel(record, linkedGps.lat, linkedGps.lon);
+          if (p) pos = p;
+        }
+        const x = pos.x * scaleX, y = pos.y * scaleY;
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 10, y - 18);
+        ctx.lineTo(x + 10, y - 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#
 
     function saveProjectList(list) {
       localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
