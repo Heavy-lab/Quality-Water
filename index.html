@@ -1,889 +1,850 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="manifest.json">
-  <script>
-    // Enhanced service worker registration will try a local 'sw.js' and fall back to registering
-    // an inline-generated blob service worker if 'sw.js' is not available (best-effort).
-    // The service worker script is built below in the page (swCode) and used as a fallback.
-    // This keeps the original existing registration but extends it with background-sync capabilities.
-    // Registration actually happens after the main UI is defined (window.onload).
-  </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  
-  <!-- Apple/iOS PWA Meta Tags -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  >
+  <meta name="theme-color" content="#1e3a8a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Water Report">
+  <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  
+
   <title>Daily Water Quality Monitoring Report</title>
+
   <style>
     :root {
       --primary: #1e3a8a;
+      --primary-dark: #172554;
       --border: #cbd5e1;
-      --bg-light: #f8fafc;
+      --bg: #f1f5f9;
+      --light: #f8fafc;
       --danger: #dc2626;
       --success: #16a34a;
-      --pending: #d97706;
+      --warning: #d97706;
       --muted: #475569;
     }
 
-    * { 
-      box-sizing: border-box; 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-      -webkit-tap-highlight-color: transparent; 
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     html {
-      /* Creates a buffer space at the bottom of the viewport for focus scrolling */
-      scroll-padding-bottom: 280px;
+      scroll-padding-bottom: 130px;
     }
 
-    body { 
-      background-color: #f1f5f9; 
-      margin: 0; 
-      padding: env(safe-area-inset-top, 12px) env(safe-area-inset-right, 12px) env(safe-area-inset-bottom, 12px) env(safe-area-inset-left, 12px); 
-      color: #0f172a; 
-      -webkit-text-size-adjust: 100%; 
-      transition: padding-bottom 0.25s ease-in-out;
+    body {
+      margin: 0;
+      color: #0f172a;
+      background: var(--bg);
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        calc(110px + env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      -webkit-text-size-adjust: 100%;
     }
 
     .container {
-      max-width: 950px; margin: 0 auto; background: #ffffff; padding: 24px;
-      border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      position: relative; overflow: hidden;
-    }
-
-    /* Print View Container - Now strictly centered */
-    .print-text-block {
-      display: none;
-      white-space: pre-wrap !important;
-      word-wrap: break-word !important;
-      overflow-wrap: anywhere !important;
-      overflow: visible !important;
-      height: auto !important;
-      font-size: 14px;
-      width: 100%;
-      text-align: center !important;
-      justify-content: center !important;
-      align-items: center !important;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 22px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, .12);
     }
 
     .print-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 12px; border-bottom: 2px solid var(--primary); padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--primary);
     }
-    .print-header .header-title { font-size: 1.4rem; font-weight: bold; color: var(--primary); }
-    .print-header img { max-height: 55px; max-width: 180px; object-fit: contain; }
 
-    .section-block { margin-bottom: 18px; }
+    .header-title {
+      font-weight: 800;
+      font-size: 1.35rem;
+      color: var(--primary);
+    }
+
+    .section-block {
+      margin: 0 0 18px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
     .section-title {
-      background-color: var(--primary); color: white; padding: 6px 10px;
-      font-weight: bold; font-size: 1rem; border-radius: 4px; margin-top: 10px; margin-bottom: 10px;
+      margin: 10px 0;
+      padding: 7px 10px;
+      color: #fff;
+      background: var(--primary);
+      border-radius: 5px;
+      font-weight: 800;
     }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-    .form-group { display: flex; flex-direction: column; }
-    .form-group.full-width { grid-column: 1 / -1; }
-
-    label { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; color: #334155; }
-
-    input[type="text"], input[type="number"], input[type="date"], select {
-      width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; 
-      font-size: 16px; background-color: #fff;
-      -webkit-appearance: none; appearance: none;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
     }
 
-    .auto-expand {
-      width: 100%; min-height: 40px; padding: 8px; border: 1px solid var(--border);
-      border-radius: 4px; font-size: 16px; background-color: #fff; resize: none;
-      overflow: hidden; white-space: pre-wrap; word-wrap: break-word;
-      -webkit-appearance: none; appearance: none;
-      position: relative;
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
 
-    .table-container { overflow-x: auto; margin-top: 6px; margin-bottom: 6px; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-    th, td { border: 1px solid var(--border); padding: 5px 6px; text-align: left; vertical-align: middle; }
-    th { background-color: var(--bg-light); font-weight: 600; }
-
-    .yn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
-    .yn-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; }
-    .yn-item select { width: auto; font-size: 16px; padding: 4px 8px; }
-
-    .controls-header {
-      background: #e2e8f0; padding: 12px; border-radius: 6px; margin-bottom: 16px;
-      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+    .full-width {
+      grid-column: 1 / -1;
     }
 
-    .save-indicator-container { min-width: 140px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
+    label {
+      margin-bottom: 4px;
+      color: #334155;
+      font-size: .85rem;
+      font-weight: 700;
+    }
 
-    .btn { background-color: var(--primary); color: white; border: none; padding: 10px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; text-align: center; text-decorat[...] }
-    .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
-    .btn-danger { background-color: var(--danger); }
-    .btn-secondary { background-color: #64748b; }
-    .btn-success { background-color: var(--success); }
-    .btn-warning { background-color: var(--pending); color: white; }
-    .btn:hover, .btn:active { opacity: 0.85; }
+    input, textarea, select {
+      width: 100%;
+      min-height: 39px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: #0f172a;
+      background: #fff;
+      font-size: 16px;
+    }
 
-    .exceedance-badge { color: var(--danger); font-weight: bold; background: #fee2e2; padding: 2px 4px; border-radius: 4px; display: inline-block; }
+    textarea {
+      resize: vertical;
+      min-height: 40px;
+    }
 
-    .sig-container { border: 1px solid var(--border); border-radius: 4px; background: #fff; position: relative; height: 120px; touch-action: none; }
-    .sig-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
-    .sig-tools { position: absolute; right: 4px; bottom: 4px; z-index: 10; }
+    select[multiple] {
+      min-height: 105px;
+    }
 
-    select[multiple] { min-height: 100px; padding: 4px; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #e2e8f0;
+      border-radius: 7px;
+    }
 
-    .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
-    .photo-card { border: 1px solid var(--border); padding: 6px; border-radius: 6px; background: #fafafa; display: flex; flex-direction: column; gap: 6px; }
-    .photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #eaefe9; border-radius: 4px; }
-    .photo-card-actions { display: flex; justify-content: flex-end; }
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
 
-    .project-picker { display:flex; gap:8px; align-items:center; }
+    .btn {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      border-radius: 5px;
+      min-height: 40px;
+      padding: 9px 12px;
+      color: #fff;
+      background: var(--primary);
+      font-size: .9rem;
+      font-weight: 750;
+      line-height: 1.15;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn:active { opacity: .82; transform: translateY(1px); }
+    .btn-secondary { background: #64748b; }
+    .btn-success { background: var(--success); }
+    .btn-warning { background: var(--warning); }
+    .btn-danger { background: var(--danger); }
+    .btn-sm { min-height: 32px; padding: 6px 9px; font-size: .8rem; }
+
+    .save-status {
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .sync-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .yn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 6px;
+    }
+
+    .yn-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: .9rem;
+    }
+
+    .yn-item select {
+      width: 64px;
+      min-height: 32px;
+      padding: 3px 6px;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      min-width: 650px;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+
+    th, td {
+      padding: 5px 6px;
+      border: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: var(--light);
+      font-weight: 800;
+    }
+
+    td textarea, td input, td select {
+      min-width: 100px;
+    }
+
+    .sample-block {
+      margin: 14px 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .sample-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      padding: 7px;
+      background: #e2e8f0;
+      border-radius: 4px;
+    }
+
+    .sample-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
 
     .coord-badge {
-      font-size: 0.85rem;
-      background: #f1f5f9;
-      border: 1px dashed var(--border);
-      padding: 4px 8px;
-      border-radius: 4px;
       display: inline-block;
-      margin-left: 8px;
+      padding: 3px 6px;
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      font-size: .78rem;
+      white-space: nowrap;
     }
 
-    @media (max-width: 600px) {
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .photo-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 7px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fafafa;
+      break-inside: avoid;
+    }
+
+    .photo-card img {
+      width: 100%;
+      max-height: 250px;
+      object-fit: contain;
+      border-radius: 4px;
+      background: #e2e8f0;
+    }
+
+    /*
+      This bar intentionally does NOT use .no-print. It remains visible while
+      using the installed application. It is hidden only during actual printing.
+    */
+    .home-action-bar {
+      position: fixed;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      gap: 9px;
+      justify-content: center;
+      padding:
+        10px
+        max(12px, env(safe-area-inset-right))
+        calc(10px + env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      background: rgba(15, 23, 42, .96);
+      box-shadow: 0 -3px 14px rgba(0, 0, 0, .22);
+    }
+
+    .home-action-bar .btn {
+      min-width: min(44vw, 190px);
+      min-height: 46px;
+      font-size: .95rem;
+    }
+
+    .no-print { }
+
+    @media (max-width: 620px) {
+      .container { padding: 14px; }
+      .toolbar { align-items: stretch; }
+      .toolbar-group { flex-direction: column; align-items: stretch; }
+      .toolbar-group .btn, .toolbar-group input, .toolbar-group select { width: 100%; }
       .photo-grid { grid-template-columns: 1fr; }
-      .controls-header { flex-direction: column; align-items: stretch; }
-      .controls-header > div { display: flex; flex-direction: column; gap: 8px; }
+      .sample-head { align-items: flex-start; flex-direction: column; }
+      .sample-actions { justify-content: flex-start; }
     }
 
     @media print {
       @page { margin: 10mm 8mm; }
-      body { background-color: white; padding: 0; font-size: 9pt; }
-      .container { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; overflow: visible; }
-      .no-print { display: none !important; }
-      .print-header { display: flex !important; page-break-after: avoid; }
-      .section-block { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 14px; }
-      .sample-block { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 12px; }
-      .photo-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; page-break-inside: auto !important; break-inside: auto !important; }
-      .photo-card { page-break-inside: avoid !important; break-inside: avoid !important; border: 1px solid #cbd5e1 !important; display: flex !important; flex-direction: column !important; }
-      .photo-card img { max-height: 200px !important; object-fit: contain !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-      
-      input, textarea, select { display: none !important; }
-      .print-text-block { display: flex !important; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; min-height: 16px; font-size: 9pt !important; }
-      table .print-text-block { border-bottom: none !important; }
-      
-      .yn-item { border: none !important; border-bottom: 1px dotted #cbd5e1 !important; }
-      .section-title { background-color: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1; page-break-after: avoid; }
-      .sig-container { border: none; border-bottom: 1px solid #000; height: 75px; }
-    }
 
-    /* Sync status badges */
-    .sync-badge { padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; }
-    .sync-synced { background: #ecfdf5; color: var(--success); border: 1px solid rgba(16,185,129,0.12); }
-    .sync-pending { background: #fff7ed; color: var(--pending); border: 1px solid rgba(217,119,6,0.12); }
-    .sync-local { background: #f1f5f9; color: var(--muted); border: 1px solid rgba(71,85,105,0.06); }
+      body {
+        padding: 0;
+        background: #fff;
+        font-size: 9pt;
+      }
+
+      .container {
+        max-width: none;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .no-print,
+      .toolbar,
+      .home-action-bar,
+      button,
+      input[type="file"] {
+        display: none !important;
+      }
+
+      input, textarea, select {
+        display: block !important;
+        min-height: 0 !important;
+        padding: 1px !important;
+        border: 0 !important;
+        background: transparent !important;
+        color: #000 !important;
+        font-size: 9pt !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+      }
+
+      textarea {
+        resize: none !important;
+        overflow: visible !important;
+      }
+
+      .section-title {
+        color: #0f172a;
+        background: #f1f5f9;
+        border: 1px solid var(--border);
+      }
+
+      .photo-grid { grid-template-columns: repeat(2, 1fr); }
+      .photo-card img { max-height: 180px; }
+    }
   </style>
 </head>
-<body>
 
-<div class="container">
-  <div class="print-header">
-    <div class="header-title">Daily Water Quality Monitoring Report</div>
-    <img id="headerLogoDisplay" src="" alt="Company Logo" style="display: none;">
-  </div>
-  
-  <div class="form-content">
-    <div class="controls-header no-print">
-      <div class="project-picker">
-        <label for="projectSelector"><strong>Project:</strong></label>
+<body>
+  <main class="container">
+    <header class="print-header">
+      <div class="header-title">Daily Water Quality Monitoring Report</div>
+      <div id="reportProjectLabel"></div>
+    </header>
+
+    <div class="toolbar no-print">
+      <div class="toolbar-group">
         <select id="projectSelector" aria-label="Project selector"></select>
-        <input id="newProjectName" type="text" placeholder="New project name / ID" style="padding:6px; border-radius:4px; border:1px solid var(--border);">
-        <button class="btn btn-sm btn-success" type="button" onclick="createOrSwitchProject()">Create / Switch</button>
-        <button class="btn btn-sm btn-secondary" type="button" onclick="renameProject()">Rename</button>
-        <button class="btn btn-sm btn-danger" type="button" onclick="deleteProject()" title="Delete current project's local cache">Delete Local</button>
+        <input id="newProjectName" type="text" placeholder="New project name / ID">
+        <button class="btn btn-success btn-sm" type="button" id="createProjectBtn">Create / Switch</button>
+        <button class="btn btn-secondary btn-sm" type="button" id="renameProjectBtn">Rename</button>
+        <button class="btn btn-danger btn-sm" type="button" id="deleteProjectBtn">Delete Local</button>
       </div>
 
-      <div style="display:flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;">
-        <button class="btn btn-warning" type="button" onclick="manualSaveProgress()">Save Progress</button>
-        <div class="save-indicator-container">
-          <span id="saveStatusIndicator" style="font-size: 0.8rem; color: #475569;"></span>
-        </div>
-        <button class="btn btn-success" type="button" onclick="downloadMasterTemplate()">Download Template</button>
-        <button class="btn btn-secondary" type="button" onclick="document.getElementById('masterFileInput').click()">Upload Template</button>
-        <input type="file" id="masterFileInput" accept=".json" style="display:none;" onchange="uploadMasterTemplate(event)">
-        <button class="btn btn-sm" type="button" onclick="triggerPrintOrPDF()">Print / Save PDF</button>
+      <div class="toolbar-group">
+        <button class="btn btn-warning" type="button" id="saveBtn">Save Progress</button>
+        <span id="saveStatusIndicator" class="save-status" aria-live="polite"></span>
       </div>
     </div>
 
-    <!-- PART I -->
-    <div class="section-block">
+    <section class="section-block">
       <div class="section-title">Part I. General Information</div>
+
       <div class="grid">
-        <div class="form-group full-width"><label>Project Name:</label><textarea class="auto-expand" id="projName" rows="1" oninput="autoResize(this)">05-1G9504 DRAINAGE SYSTEM UPGRADES AND SLOPE STAB[...]</textarea></div>
-        <div class="form-group"><label>Project Number:</label><textarea class="auto-expand" id="projNum" rows="1" oninput="autoResize(this)">05-1G9504 | 05-SCr-9-9.0/25.5</textarea></div>
-        <div class="form-group"><label>401 WDID Number:</label><textarea class="auto-expand" id="wdidNum" rows="1" oninput="autoResize(this)">WPCP (2022)</textarea></div>
-        <div class="form-group full-width"><label>Project Address:</label><textarea class="auto-expand" id="projAddr" rows="1" oninput="autoResize(this)">Location 15 – On Route 9 at Post Mile 17.89 [...]</textarea></div>
-        <div class="form-group"><label>Approximate Coordinates:</label><textarea class="auto-expand" id="projCoords" rows="1" oninput="autoResize(this)">37.188745, -122.143153</textarea></div>
-        <div class="form-group"><label>Monitoring Performed By:</label><textarea class="auto-expand" id="monBy" rows="1" oninput="autoResize(this)">Tully Consulting Group</textarea></div>
-        <div class="form-group"><label>Inspector Name & Title:</label><textarea class="auto-expand" id="inspName" rows="1" oninput="autoResize(this)">Inspector</textarea></div>
-        
-        <div class="form-group">
-          <label>Inspector Signature (Draw Below):</label>
-          <div class="sig-container" id="sigContainer">
-            <canvas id="sigCanvas" class="sig-canvas"></canvas>
-            <div class="sig-tools no-print"><button class="btn btn-sm btn-secondary" type="button" onclick="clearSignature()">Clear</button></div>
-          </div>
+        <div class="form-group full-width">
+          <label for="projName">Project Name</label>
+          <textarea id="projName">05-1G9504 DRAINAGE SYSTEM UPGRADES AND SLOPE STABILIZATION</textarea>
         </div>
 
-        <div class="form-group"><label>Date of Sampling:</label><input type="date" id="dateSampling"></div>
-        <div class="form-group"><label>Date Report Completed:</label><input type="date" id="dateCompleted"></div>
+        <div class="form-group">
+          <label for="projNum">Project Number</label>
+          <textarea id="projNum">05-1G9504 | 05-SCr-9-9.0/25.5</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="wdidNum">401 WDID Number</label>
+          <textarea id="wdidNum">WPCP (2022)</textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="projAddr">Project Address</label>
+          <textarea id="projAddr">Location 15 – On Route 9 at Post Mile 17.89</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="projCoords">Approximate Coordinates</label>
+          <textarea id="projCoords">37.188745, -122.143153</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="monBy">Monitoring Performed By</label>
+          <textarea id="monBy">Tully Consulting Group</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="inspName">Inspector Name & Title</label>
+          <textarea id="inspName">Inspector</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="dateSampling">Date of Sampling</label>
+          <input type="date" id="dateSampling">
+        </div>
+
+        <div class="form-group">
+          <label for="dateCompleted">Date Report Completed</label>
+          <input type="date" id="dateCompleted">
+        </div>
       </div>
 
-      <p style="margin-top:10px; margin-bottom:4px;"><strong>Weather Information</strong></p>
+      <p><strong>Weather Information</strong></p>
       <div class="grid">
-        <div class="form-group"><label>Antecedent Conditions (48 hrs):</label><textarea class="auto-expand" id="weatherAnt" rows="1" oninput="autoResize(this)">Sunny</textarea></div>
-        <div class="form-group"><label>Current Weather:</label><textarea class="auto-expand" id="weatherCur" rows="1" oninput="autoResize(this)">Sunny</textarea></div>
-        <div class="form-group"><label>Precipitation Forecast (NOAA):</label><textarea class="auto-expand" id="weatherForecast" rows="1" oninput="autoResize(this)">None Predicted</textarea></div>
-        <div class="form-group"><label>Wind Condition:</label><textarea class="auto-expand" id="weatherWind" rows="1" oninput="autoResize(this)">< 5 mph</textarea></div>
+        <div class="form-group">
+          <label for="weatherAnt">Antecedent Conditions (48 hrs)</label>
+          <textarea id="weatherAnt">Sunny</textarea>
+        </div>
+        <div class="form-group">
+          <label for="weatherCur">Current Weather</label>
+          <textarea id="weatherCur">Sunny</textarea>
+        </div>
+        <div class="form-group">
+          <label for="weatherForecast">Precipitation Forecast (NOAA)</label>
+          <textarea id="weatherForecast">None Predicted</textarea>
+        </div>
+        <div class="form-group">
+          <label for="weatherWind">Wind Condition</label>
+          <textarea id="weatherWind">&lt; 5 mph</textarea>
+        </div>
       </div>
 
-      <div class="form-group full-width" style="margin-top: 6px;">
-        <label>Exception Documentation (required if sampling was not conducted):</label>
-        <textarea class="auto-expand" id="exceptionDoc" rows="1" oninput="autoResize(this)" placeholder="Enter exception explanation or N/A">N/A</textarea>
+      <div class="form-group" style="margin-top:10px">
+        <label for="exceptionDoc">Exception Documentation (required if sampling was not conducted)</label>
+        <textarea id="exceptionDoc">N/A</textarea>
       </div>
 
-      <p style="margin-top:10px; margin-bottom:4px;"><strong>Site Activity (Hold Ctrl/Cmd to select multiple):</strong></p>
-      <div class="form-group full-width">
+      <p><strong>Site Activity</strong> <small>(hold Ctrl/Cmd to select multiple)</small></p>
+      <div class="form-group">
         <select id="siteActivitySelect" multiple>
-          <option value="Installation of Clear Water Diversion">Installation of Clear Water Diversion</option>
-          <option value="Active Diversion">Active Diversion</option>
-          <option value="Background Sampling">Background Sampling</option>
-          <option value="Removal of Clear Water Diversion">Removal of Clear Water Diversion</option>
-          <option value="Other In-Water Work">Other In-Water Work</option>
+          <option>Installation of Clear Water Diversion</option>
+          <option>Active Diversion</option>
+          <option>Background Sampling</option>
+          <option>Removal of Clear Water Diversion</option>
+          <option>Other In-Water Work</option>
         </select>
       </div>
-      <div class="form-group full-width" style="margin-top: 4px;">
-        <label>Other Site Activity Details:</label>
-        <textarea class="auto-expand" id="saOther" rows="1" oninput="autoResize(this)"></textarea>
-      </div>
-    </div>
 
-    <!-- PART II -->
-    <div class="section-block">
+      <div class="form-group" style="margin-top:10px">
+        <label for="saOther">Other Site Activity Details</label>
+        <textarea id="saOther"></textarea>
+      </div>
+    </section>
+
+    <section class="section-block">
       <div class="section-title">Part II. Visual Inspection Report</div>
-      <p style="margin-bottom:4px;"><strong>Observations of Receiving Water for Presence of Contaminants:</strong></p>
-      
-      <div class="yn-grid" id="ynGrid">
-        <div class="yn-item"><span>Floating/Suspended Materials</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Surface Sheen</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Discoloration</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Turbidity</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Odors</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Soil, Silt, and Sand</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Bark, Sawdust, Slash</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Rubbish and Debris</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Cement / Washings</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Oil & Petroleum</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Welding Slag</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
-        <div class="yn-item"><span>Other Organic/Earthen</span><select class="yn-sel"><option>N</option><option>Y</option></select></div>
+      <p><strong>Observations of Receiving Water for Presence of Contaminants</strong></p>
+
+      <div class="yn-grid" id="ynGrid"></div>
+
+      <div class="form-group" style="margin-top:10px">
+        <label for="pollutantDetails">Sources of Observed Pollutants / Details</label>
+        <textarea id="pollutantDetails"></textarea>
       </div>
 
-      <div class="form-group full-width" style="margin-top: 6px;">
-        <label>Sources of Observed Pollutants / Details:</label>
-        <textarea class="auto-expand" id="pollutantDetails" rows="1" oninput="autoResize(this)" placeholder="Describe sources if contaminants were observed"></textarea>
+      <div class="form-group" style="margin-top:10px">
+        <label for="part2Comments">Additional Comments</label>
+        <textarea id="part2Comments"></textarea>
       </div>
+    </section>
 
-      <div class="form-group full-width" style="margin-top: 6px;">
-        <label>Additional Comments:</label>
-        <textarea class="auto-expand" id="part2Comments" rows="1" oninput="autoResize(this)" placeholder="Enter additional comments..."></textarea>
-      </div>
-    </div>
-
-    <!-- PART III -->
-    <div class="section-block">
+    <section class="section-block">
       <div class="section-title">Part III. Sampling Locations</div>
       <div class="table-container">
         <table id="locationsTable">
           <thead>
             <tr>
-              <th style="width: 25%;">Location</th><th style="width: 30%;">Coordinates</th><th style="width: 35%;">Description</th><th class="no-print" style="width: 10%;">Action</th>
+              <th>Location</th>
+              <th>Coordinates</th>
+              <th>Description</th>
+              <th class="no-print">Action</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Upstream</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">37.188633, -122.143450</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">15 feet from diversion pipe.</textarea></td>
-              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
-            </tr>
-            <tr>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Effluent</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">N/A</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">N/A</textarea></td>
-              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
-            </tr>
-            <tr>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Downstream</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">37.188834, -122.143041</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">35 feet diversion pipe.</textarea></td>
-              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeRow(this)">Remove</button></td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
-      <button class="btn btn-sm no-print" type="button" onclick="addLocationRow()">+ Add Location</button>
-    </div>
+      <button class="btn btn-sm no-print" type="button" id="addLocationBtn">+ Add Location</button>
+    </section>
 
-    <!-- WATER QUALITY OBJECTIVES -->
-    <div class="section-block">
+    <section class="section-block">
       <div class="section-title">Water Quality Objectives</div>
       <div class="table-container">
         <table id="objectivesTable">
           <thead>
             <tr>
-              <th style="width: 5%;">#</th><th style="width: 25%;">Quality Characteristic</th><th style="width: 15%;">Test Method</th><th style="width: 15%;">Detection Limit (min)</th><th style="width[...]</th>
+              <th>#</th>
+              <th>Quality Characteristic</th>
+              <th>Test Method</th>
+              <th>Detection Limit (min)</th>
+              <th>Objective</th>
+              <th class="no-print">Action</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td style="text-align: center; font-weight: bold;" class="row-num">1</td>
-              <td><textarea class="auto-expand obj-param" rows="1" oninput="autoResize(this); syncObjectiveNames(); runExceedanceCheck();">Turbidity (NTU)</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">Field Meter</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">1 NTU</textarea></td>
-              <td><textarea class="auto-expand" rows="1" oninput="autoResize(this)">< 20% Increase</textarea></td>
-              <td>
-                <select class="obj-type" onchange="toggleVal2(this); runExceedanceCheck();">
-                  <option value="pct_gt">Downstream > Upstream by %</option>
-                  <option value="val_diff_gt">Downstream > Upstream by Value</option>
-                  <option value="any_sample_pct">Any Sample Over %</option>
-                  <option value="any_sample_val">Any Sample Over Value</option>
-                  <option value="val_gt">Value Greater Than</option>
-                  <option value="val_eq">Value Equals</option>
-                  <option value="val_between">Outside Range (Min/Max)</option>
-                </select>
-                <input type="number" step="any" class="obj-val1" value="20" placeholder="Val or %" style="margin-top:4px;" onchange="runExceedanceCheck()">
-                <input type="number" step="any" class="obj-val2" placeholder="Max Val" style="display:none; margin-top:4px;" onchange="runExceedanceCheck()">
-              </td>
-              <td class="no-print"><button class="btn btn-sm btn-danger" type="button" onclick="removeObjectiveRow(this)">Remove</button></td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
-      <button class="btn btn-sm no-print" type="button" onclick="addObjectiveRow()">+ Add Objective</button>
-    </div>
+      <button class="btn btn-sm no-print" type="button" id="addObjectiveBtn">+ Add Objective</button>
+    </section>
 
-    <!-- PART IV -->
-    <div class="section-block">
+    <section class="section-block">
       <div class="section-title">Part IV. Water Quality Sampling and Analysis Log</div>
       <div id="sampleLogsContainer"></div>
-      <button class="btn btn-sm no-print" type="button" onclick="addSampleBlock()" style="margin-top: 8px;">+ Add New Sample Set</button>
-      <p style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">* Describe any in-water work, sources of exceedances, or corrective measures taken in response to an exceedance.</p>
-    </div>
+      <button class="btn btn-sm no-print" type="button" id="addSampleBtn">+ Add New Sample Set</button>
+      <p><small>* Describe any in-water work, sources of exceedances, or corrective measures taken in response to an exceedance.</small></p>
+    </section>
 
-    <!-- PHOTO LOG -->
-    <div class="section-block" style="page-break-inside: auto; break-inside: auto;">
+    <section class="section-block">
       <div class="section-title">Photo Documentation Log</div>
-      <div class="no-print" style="margin-bottom: 8px;">
-        <label>Attach Site Photos:</label><br>
-        <input type="file" id="photoUpload" accept="image/*" multiple onchange="handlePhotoUpload(event)" style="padding: 0; border: none;">
+      <div class="no-print" style="margin-bottom:10px">
+        <label for="photoUpload">Attach Site Photos</label>
+        <input id="photoUpload" type="file" accept="image/*" multiple>
       </div>
       <div class="photo-grid" id="photoGrid"></div>
-    </div>
-  </div>
-</div>
+    </section>
+  </main>
 
-<script>
-  /**********************************************************************
-   * Multi-project & IndexedDB storage, offline queue, background-sync
-   * GPS auto-tagging per sample block
-   * Photo compression & EXIF stripping before storing
-   * PDF export via jsPDF (dynamically loaded; cached by service worker)
-   * Sync status indicator per project
-   **********************************************************************/
+  <!-- Always visible in browser and installed-home-screen modes; hidden only on paper. -->
+  <nav class="home-action-bar no-print" aria-label="Report actions">
+    <button class="btn btn-success" type="button" id="printBtn">Print / Save PDF</button>
+    <button class="btn" type="button" id="shareBtn">Share Report</button>
+  </nav>
 
-  // ----- Lightweight IndexedDB helpers -----
-  const DB_NAME = 'wq_reports_db_v1';
-  const DB_VERSION = 1;
-  let dbPromise = null;
-  function openDB() {
-    if (dbPromise) return dbPromise;
-    dbPromise = new Promise((resolve, reject) => {
-      const r = indexedDB.open(DB_NAME, DB_VERSION);
-      r.onupgradeneeded = e => {
-        const db = e.target.result;
-        // objectStores: projects meta, reports queue (per project via index), photos store
-        if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('reports_queue')) {
-          const s = db.createObjectStore('reports_queue', { keyPath: 'qid', autoIncrement: true });
-          s.createIndex('projectId', 'projectId', { unique: false });
-          s.createIndex('status', 'status', { unique: false });
-        }
-        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
-      };
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-    return dbPromise;
-  }
+  <script>
+    "use strict";
 
-  async function idbPut(store, value) {
-    const db = await openDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(store, 'readwrite');
-      const st = tx.objectStore(store);
-      const req = st.put(value);
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-    });
-  }
-  async function idbGetAllByIndex(store, indexName, query) {
-    const db = await openDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(store, 'readonly');
-      const st = tx.objectStore(store);
-      const idx = st.index(indexName);
-      const r = idx.getAll(query);
-      r.onsuccess = () => res(r.result);
-      r.onerror = () => rej(r.error);
-    });
-  }
-  async function idbAdd(store, value) {
-    const db = await openDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(store, 'readwrite');
-      const st = tx.objectStore(store);
-      const req = st.add(value);
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-    });
-  }
-  async function idbGetAll(store) {
-    const db = await openDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(store, 'readonly');
-      const st = tx.objectStore(store);
-      const req = st.getAll();
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-    });
-  }
-  async function idbDelete(store, key) {
-    const db = await openDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(store, 'readwrite');
-      const st = tx.objectStore(store);
-      const req = st.delete(key);
-      req.onsuccess = () => res();
-      req.onerror = () => rej(req.error);
-    });
-  }
+    const PROJECT_LIST_KEY = "wq_project_list";
+    const CURRENT_PROJECT_KEY = "wq_current_project";
+    const DEFAULT_PROJECT = "default_project";
 
-  // ----- Project management (namespacing localStorage) -----
-  let currentProjectId = localStorage.getItem('wq_current_project') || 'default_project';
-  const PROJECT_LIST_KEY = 'wq_project_list';
+    let currentProjectId = localStorage.getItem(CURRENT_PROJECT_KEY) || DEFAULT_PROJECT;
+    let sampleCount = 0;
 
-  function loadProjectList() {
-    try {
-      const raw = localStorage.getItem(PROJECT_LIST_KEY);
-      return raw ? JSON.parse(raw) : [{ id: 'default_project', name: 'Default Project' }];
-    } catch (e) { return [{ id: 'default_project', name: 'Default Project' }]; }
-  }
-  function saveProjectList(list) { localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list)); }
+    const contaminantOptions = [
+      "Floating/Suspended Materials", "Surface Sheen", "Discoloration", "Turbidity",
+      "Odors", "Soil, Silt, and Sand", "Bark, Sawdust, Slash", "Rubbish and Debris",
+      "Cement / Washings", "Oil & Petroleum", "Welding Slag", "Other Organic/Earthen"
+    ];
 
-  function populateProjectSelector() {
-    const sel = document.getElementById('projectSelector');
-    sel.innerHTML = '';
-    const list = loadProjectList();
-    list.forEach(p => {
-      const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name || p.id;
-      sel.appendChild(opt);
-    });
-    sel.value = currentProjectId;
-  }
-
-  function createOrSwitchProject() {
-    const nameInput = document.getElementById('newProjectName');
-    const name = nameInput.value && nameInput.value.trim();
-    const pid = name ? name.replace(/\s+/g, '_') : `project_${Date.now()}`;
-    let list = loadProjectList();
-    if (!list.find(p => p.id === pid)) {
-      list.push({ id: pid, name: name || pid });
-      saveProjectList(list);
+    function autosaveKey(projectId) {
+      return `water_quality_report_autosave_${projectId}`;
     }
-    currentProjectId = pid;
-    localStorage.setItem('wq_current_project', currentProjectId);
-    populateProjectSelector();
-    loadSavedProgressForProject(); // load project-specific state
-    setSyncStatus('local');
-    alert('Switched to project: ' + pid);
-  }
 
-  function renameProject() {
-    const sel = document.getElementById('projectSelector');
-    const list = loadProjectList();
-    const current = list.find(p => p.id === sel.value);
-    const newName = prompt('Rename project display name:', current ? current.name : sel.value);
-    if (newName != null) {
-      if (current) current.name = newName;
-      saveProjectList(list);
-      populateProjectSelector();
+    function escapeHTML(value = "") {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
     }
-  }
 
-  function deleteProject() {
-    if (!confirm('Delete local data for current project? This removes autosaves and queued items only.')) return;
-    // Remove autosave key for this project and queued reports in idb
-    localStorage.removeItem(autosaveKey(currentProjectId));
-    // remove queued reports
-    (async () => {
-      const entries = await idbGetAllByIndex('reports_queue', 'projectId', currentProjectId);
-      for (const e of entries) {
-        await idbDelete('reports_queue', e.qid);
-      }
-      alert('Local data deleted for project ' + currentProjectId);
-      setSyncStatus('local');
-    })();
-  }
-
-  function autosaveKey(projectId) { return `water_quality_report_autosave_${projectId}`; }
-
-  // Override save/load to be project-scoped
-  function saveProgress(isAuto = false) {
-    try {
-      const key = autosaveKey(currentProjectId);
-      localStorage.setItem(key, JSON.stringify(gatherFormState()));
-      setSyncStatus('local');
-      if (!isAuto) {
-        const indicator = document.getElementById('saveStatusIndicator');
-        if (indicator) {
-          const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          indicator.textContent = `Saved Locally (${timeString})`; // local saved
-          setTimeout(() => { if (indicator.textContent.includes(timeString)) indicator.textContent = ''; }, 4000);
-        }
-      }
-    } catch (e) { console.warn("Storage error saving progress: ", e); }
-  }
-
-  function manualSaveProgress() { saveProgress(false); }
-
-  function loadSavedProgressForProject() {
-    const savedData = localStorage.getItem(autosaveKey(currentProjectId));
-    if (savedData) {
-      try { populateFromMasterData(JSON.parse(savedData)); setSyncStatus('local'); return true; } 
-      catch (e) { console.error("Error loading autosaved progress:", e); }
-    } else {
-      // if none, try default autosave fallback
-      if (currentProjectId !== 'default_project') {
-        const fallback = localStorage.getItem('water_quality_report_autosave');
-        if (fallback) { populateFromMasterData(JSON.parse(fallback)); setSyncStatus('local'); return true; }
-      }
-    }
-    return false;
-  }
-
-  // ----- Report queuing & network sync -----
-  // queueReport: stores report in IDB reports_queue store; attempts immediate upload if online;
-  // if offline, registers background-sync (if available) or uses retry timer.
-  async function queueReport(report) {
-    try {
-      report.projectId = currentProjectId;
-      report.createdAt = new Date().toISOString();
-      report.status = 'queued';
-      await idbAdd('reports_queue', report);
-      setSyncStatus('pending');
-      // try immediate upload
-      if (navigator.onLine) await attemptSyncQueue();
-      else {
-        // register background sync
-        if (navigator.serviceWorker && navigator.serviceWorker.ready && 'SyncManager' in window) {
-          const reg = await navigator.serviceWorker.ready;
-          try { await reg.sync.register('wq-sync-' + currentProjectId); console.log('Background sync registered'); } catch (e) { console.warn('Background sync registration failed', e); startRetryTimer(); }
-        } else {
-          startRetryTimer();
-        }
-      }
-      return true;
-    } catch (e) { console.error('queueReport error', e); return false; }
-  }
-
-  let retryTimer = null;
-  function startRetryTimer() {
-    if (retryTimer) return;
-    retryTimer = setInterval(() => {
-      if (navigator.onLine) {
-        attemptSyncQueue().finally(() => { clearInterval(retryTimer); retryTimer = null; });
-      }
-    }, 15000);
-  }
-
-  async function attemptSyncQueue() {
-    const queued = await idbGetAllByIndex('reports_queue', 'projectId', currentProjectId);
-    if (!queued || queued.length === 0) { setSyncStatus('synced'); return; }
-    for (const item of queued) {
+    function loadProjectList() {
       try {
-        // Replace with your real endpoint. Here we POST to /upload-report as a placeholder.
-        // The endpoint must accept JSON and uploaded images as data URLs or separate multipart.
-        const res = await fetch('/upload-report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
-        });
-        if (res.ok) {
-          await idbDelete('reports_queue', item.qid);
-        } else {
-          console.warn('Server responded non-OK, will retry later', await res.text());
-        }
-      } catch (e) {
-        console.warn('Upload failed, will retry later', e);
-        // network error -> stop processing now
-        setSyncStatus('pending');
-        throw e;
+        const parsed = JSON.parse(localStorage.getItem(PROJECT_LIST_KEY));
+        return Array.isArray(parsed) && parsed.length
+          ? parsed
+          : [{ id: DEFAULT_PROJECT, name: "Default Project" }];
+      } catch {
+        return [{ id: DEFAULT_PROJECT, name: "Default Project" }];
       }
     }
-    setSyncStatus('synced');
-  }
 
-  // Expose a "submit" action for users that will queue & try to sync immediately.
-  async function submitReportNow() {
-    const state = gatherFormState();
-    await saveProgress(true); // save first
-    const queued = await queueReport(state);
-    if (queued) alert('Report queued for sync. It will upload when network is available.');
-  }
-
-  // ----- Sync status UI -----
-  function setSyncStatus(state) {
-    const el = document.getElementById('saveStatusIndicator');
-    if (!el) return;
-    if (state === 'synced') {
-      el.innerHTML = `<span class="sync-badge sync-synced">Synced to Cloud</span>`;
-    } else if (state === 'pending') {
-      el.innerHTML = `<span class="sync-badge sync-pending">Pending Sync</span>`;
-    } else {
-      el.innerHTML = `<span class="sync-badge sync-local">Saved Locally</span>`;
+    function saveProjectList(list) {
+      localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
     }
-  }
 
-  // ----- Photo compression (canvas) and EXIF stripping -----
-  // Max dimension for compression
-  const MAX_PHOTO_DIM = 1280;
+    function projectName() {
+      return loadProjectList().find(p => p.id === currentProjectId)?.name || currentProjectId;
+    }
 
-  async function compressImageFile(file) {
-    // Use createImageBitmap when available to decode quickly
-    try {
-      const imgBitmap = await createImageBitmap(file);
-      let w = imgBitmap.width, h = imgBitmap.height;
-      const ratio = Math.min(1, MAX_PHOTO_DIM / Math.max(w, h));
-      w = Math.round(w * ratio); h = Math.round(h * ratio);
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      // Draw image (this strips EXIF/orientation)
-      ctx.drawImage(imgBitmap, 0, 0, w, h);
-      // toBlob compressed (JPEG) - quality 0.75
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.75));
-      // convert to dataURL for easier inline storage
-      const dataUrl = await new Promise((res) => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result);
-        r.readAsDataURL(blob);
+    function updateProjectLabel() {
+      document.getElementById("reportProjectLabel").textContent = projectName();
+    }
+
+    function populateProjectSelector() {
+      const select = document.getElementById("projectSelector");
+      select.innerHTML = "";
+      loadProjectList().forEach(project => {
+        const option = document.createElement("option");
+        option.value = project.id;
+        option.textContent = project.name || project.id;
+        select.appendChild(option);
       });
-      // store compressed image in IDB photos store (project-scoped)
-      const rec = { projectId: currentProjectId, dataUrl, originalName: file.name, createdAt: new Date().toISOString() };
-      try {
-        await idbAdd('photos', rec);
-      } catch (e) { console.warn('Photo IDB store add failed', e); }
-      return dataUrl;
-    } catch (e) {
-      // fallback: read as dataURL uncompressed
-      return await new Promise(res => {
-        const reader = new FileReader();
-        reader.onload = e => res(e.target.result);
-        reader.readAsDataURL(file);
+      select.value = currentProjectId;
+      updateProjectLabel();
+    }
+
+    function setStatus(message) {
+      document.getElementById("saveStatusIndicator").innerHTML =
+        `<span class="sync-badge">${escapeHTML(message)}</span>`;
+    }
+
+    function makeTextarea(value = "") {
+      const textarea = document.createElement("textarea");
+      textarea.value = value;
+      return textarea;
+    }
+
+    function renderContaminants(values = {}) {
+      const grid = document.getElementById("ynGrid");
+      grid.innerHTML = "";
+
+      contaminantOptions.forEach(name => {
+        const item = document.createElement("div");
+        item.className = "yn-item";
+
+        const span = document.createElement("span");
+        span.textContent = name;
+
+        const select = document.createElement("select");
+        select.dataset.contaminant = name;
+        select.innerHTML = "<option value='N'>N</option><option value='Y'>Y</option>";
+        select.value = values[name] || "N";
+
+        item.append(span, select);
+        grid.appendChild(item);
       });
     }
-  }
 
-  function createPhotoCard(src, comment = "") {
-    const grid = document.getElementById('photoGrid');
-    const card = document.createElement('div');
-    card.className = 'photo-card';
-    card.innerHTML = `
-      <img src="${src}" alt="Site Photo" data-saved-src="${src}">
-      <textarea class="auto-expand photo-comment" rows="1" oninput="autoResize(this)" placeholder="Description / Location Comments...">${comment}</textarea>
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; gap:6px; align-items:center;">
-          <small class="coord-badge" style="display:none;" aria-hidden="true"></small>
-        </div>
-        <div class="photo-card-actions no-print"><button class="btn btn-sm btn-danger" type="button" onclick="this.closest('.photo-card').remove()">Delete Photo</button></div>
-      </div>
-    `;
-    grid.appendChild(card);
-    card.querySelectorAll('textarea').forEach(autoResize);
-    initScrollFixForElements(card.querySelectorAll('textarea'));
-  }
+    function addLocationRow(location = "Upstream", coordinates = "", description = "") {
+      const tbody = document.querySelector("#locationsTable tbody");
+      const row = document.createElement("tr");
 
-  async function handlePhotoUpload(event) {
-    Array.from(event.target.files).forEach(async (file) => {
-      const dataUrl = await compressImageFile(file);
-      createPhotoCard(dataUrl);
-    });
-    event.target.value = '';
-  }
+      [location, coordinates, description].forEach(value => {
+        const cell = document.createElement("td");
+        cell.appendChild(makeTextarea(value));
+        row.appendChild(cell);
+      });
 
-  // ----- GPS Auto-tagging for each sample block -----
-  function addSampleBlock() {
-    sampleCount++;
-    const container = document.getElementById('sampleLogsContainer');
-    const block = document.createElement('div');
-    block.className = 'sample-block';
-    block.id = `sample-block-${sampleCount}`;
-    block.dataset.lat = '';
-    block.dataset.lon = '';
-    block.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin: 4px 0; background: #e2e8f0; padding: 6px; border-radius: 4px;">
-        <div style="display:flex; gap:8px; align-items:center;">
-          <strong>Sample Collection #${sampleCount}</strong>
-          <span class="coord-badge" id="coord-${sampleCount}" style="display:none;"></span>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn btn-sm btn-secondary no-print" type="button" onclick="tagGPS(${sampleCount})" title="Tag GPS for this sample">Tag GPS</button>
-          <button class="btn btn-sm btn-warning no-print" type="button" onclick="captureGPSFallback(${sampleCount})" title="Use cached or manual GPS input">Use/Enter GPS</button>
-          <button class="btn btn-sm btn-danger no-print" type="button" onclick="this.closest('.sample-block').remove(); runExceedanceCheck();">Remove</button>
-        </div>
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 5%;">Row</th><th style="width: 25%;">Parameter</th><th style="width: 17%;">Downstream Result</th><th style="width: 17%;">Effluent Result</th><th style="width: 17%;[...]
-            </tr>
-          </thead>
-          <tbody class="sample-param-tbody">
-            <tr class="time-row" style="background-color: #f8fafc;">
-              <td style="text-align:center; font-weight:bold;">Time</td>
-              <td><strong>Time (HHMM)</strong></td>
-              <td><input type="text" class="ds-time" placeholder="HHMM"></td>
-              <td><input type="text" class="eff-time" placeholder="HHMM"></td>
-              <td><input type="text" class="us-time" placeholder="HHMM"></td>
-              <td style="text-align:center;">-</td><td class="no-print"></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <button class="btn btn-sm no-print" type="button" onclick="addParamRowToSample(${sampleCount})" style="margin-top: 4px;">+ Add Parameter</button>
-      <div class="form-group full-width" style="margin-top: 8px;">
-        <label>Sample #${sampleCount} Comments *</label>
-        <textarea class="auto-expand sample-comment" rows="1" oninput="autoResize(this)" placeholder="Describe in-water work, exceedance causes, or corrective measures..."></textarea>
-      </div>
-    `;
-    container.appendChild(block);
-
-    const objRows = document.querySelectorAll('#objectivesTable tbody tr');
-    if (objRows.length > 0) {
-      objRows.forEach((oRow) => { addParamRowToSample(sampleCount, oRow.querySelector('.obj-param').value); });
-    } else {
-      addParamRowToSample(sampleCount, "Turbidity (NTU)");
+      const action = document.createElement("td");
+      action.className = "no-print";
+      action.innerHTML = `<button class="btn btn-danger btn-sm" type="button">Remove</button>`;
+      action.querySelector("button").addEventListener("click", () => row.remove());
+      row.appendChild(action);
+      tbody.appendChild(row);
     }
-    initScrollFixForElements(block.querySelectorAll('textarea, input'));
-    // Try to auto-tag GPS when block is created (best-effort)
-    if (navigator.geolocation) {
-      // quick, non-blocking attempt
-      navigator.geolocation.getCurrentPosition(pos => {
-        block.dataset.lat = pos.coords.latitude;
-        block.dataset.lon = pos.coords.longitude;
-        const badge = document.getElementById(`coord-${sampleCount}`);
-        if (badge) { badge.style.display='inline-block'; badge.textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; }
-      }, () => {});
+
+    function addObjectiveRow(data = {}) {
+      const tbody = document.querySelector("#objectivesTable tbody");
+      const row = document.createElement("tr");
+      const number = tbody.children.length + 1;
+
+      row.innerHTML = `
+        <td class="row-num" style="font-weight:bold;text-align:center">${number}</td>
+        <td><textarea class="obj-param">${escapeHTML(data.parameter || "Turbidity (NTU)")}</textarea></td>
+        <td><textarea>${escapeHTML(data.method || "Field Meter")}</textarea></td>
+        <td><textarea>${escapeHTML(data.limit || "1 NTU")}</textarea></td>
+        <td><textarea>${escapeHTML(data.objective || "< 20% Increase")}</textarea></td>
+        <td class="no-print"><button class="btn btn-danger btn-sm" type="button">Remove</button></td>
+      `;
+
+      row.querySelector("button").addEventListener("click", () => {
+        row.remove();
+        renumberObjectiveRows();
+      });
+
+      tbody.appendChild(row);
     }
-  }
 
-  function tagGPS(sampleNum) {
-    const block = document.getElementById(`sample-block-${sampleNum}`);
-    if (!block) return;
-    if (!navigator.geolocation) { alert('Geolocation not available on this device.'); return; }
-    navigator.geolocation.getCurrentPosition(pos => {
-      block.dataset.lat = pos.coords.latitude;
-      block.dataset.lon = pos.coords.longitude;
-      const badge = document.getElementById(`coord-${sampleNum}`);
-      if (badge) { badge.style.display='inline-block'; badge.textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; }
-      saveProgress(true);
-    }, (err) => {
-      alert('Unable to get GPS: ' + err.message);
-    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-  }
+    function renumberObjectiveRows() {
+      document.querySelectorAll("#objectivesTable tbody tr").forEach((row, index) => {
+        row.querySelector(".row-num").textContent = index + 1;
+      });
+    }
 
-  function captureGPSFallback(sampleNum) {
-    // If GPS unavailable, allow manual entry
-    const block = document.getElementById(`sample-block-${sampleNum}`);
-    const manual = prompt('Enter lat,lon (e.g. 37.12345,-122.12345) or leave blank to clear:', block.dataset.lat ? `${block.dataset.lat},${block.dataset.lon}` : '');
-    if (manual === null) return;
-    if (manual.trim() === '') {
-      block.dataset.lat = ''; block.dataset.lon = '';
-      const badge = document.getElementById(`coord-${sampleNum}`); if (badge) badge.style.display='none';
-    } else {
-      const [lat, lon] = manual.split(',').map(s => parseFloat(s.trim()));
-      if (!isNaN(lat) && !isNaN(lon)) {
-        block.dataset.lat = lat; block.dataset.lon = lon;
-        const badge = document.getElementById(`coord-${sampleNum}`);
-        if (badge) { badge.style.display='inline-block'; badge.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`; }
-        saveProgress(true);
-      } else {
-        alert('Invalid coordinates.');
+    function addParamRow(sampleNumber, parameter = "Turbidity (NTU)", values = {}) {
+      const body = document.querySelector(`#sample-block-${sampleNumber} .sample-param-tbody`);
+      if (!body) return;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td class="param-number" style="font-weight:bold;text-align:center"></td>
+        <td><textarea class="param-name">${escapeHTML(parameter)}</textarea></td>
+        <td><input class="ds-result" type="text" value="${escapeHTML(values.downstream || "")}"></td>
+        <td><input class="eff-result" type="text" value="${escapeHTML(values.effluent || "")}"></td>
+        <td><input class="us-result" type="text" value="${escapeHTML(values.upstream || "")}"></td>
+        <td><textarea class="param-comments">${escapeHTML(values.comments || "")}</textarea></td>
+        <td class="no-print"><button class="btn btn-danger btn-sm" type="button">Remove</button></td>
+      `;
+
+      row.querySelector("button").addEventListener("click", () => {
+        row.remove();
+        renumberSampleRows(sampleNumber);
+      });
+
+      body.appendChild(row);
+      renumberSampleRows(sampleNumber);
+    }
+
+    function renumberSampleRows(sampleNumber) {
+      document.querySelectorAll(`#sample-block-${sampleNumber} .sample-param-tbody tr`).forEach((row, index) => {
+        row.querySelector(".param-number").textContent = index + 1;
+      });
+    }
+
+    function addSampleBlock(data = {}) {
+      sampleCount += 1;
+      const number = sampleCount;
+      const container = document.getElementById("sampleLogsContainer");
+      const block = document.createElement("div");
+
+      block.className = "sample-block";
+      block.id = `sample-block-${number}`;
+      block.dataset.lat = data.lat || "";
+      block.dataset.lon = data.lon || "";
+
+      block.innerHTML = `
+        <div class="sample-head">
+          <div>
+            <strong>Sample Collection #${number}</strong>
+            <span class="coord-badge" id="coord-${number}" ${data.lat ? "" : "hidden"}></span>
+          </div>
+          <div class="sample-actions no-print">
+            <button class="btn btn-secondary btn-sm gps-btn" type="button">Tag GPS</button>
+            <button class="btn btn-warning btn-sm manual-gps-btn" type="button">Use / Enter GPS</button>
+            <button class="btn btn-danger btn-sm remove-sample-btn" type="button">Remove</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Parameter</th>
+                <th>Downstream Result</th>
+                <th>Effluent Result</th>
+                <th>Upstream Result</th>
+                <th>Comments</th>
+                <th class="no-print">Action</th>
+              </tr>
+            </thead>
+            <tbody class="sample-param-tbody"></tbody>
+          </table>
+        </div>
+
+        <button class="btn btn-sm no-print add-param-btn" type="button">+ Add Parameter</button>
+
+        <div class="form-group" style="margin-top:8px">
+          <label>Sample #${number} Comments *</label>
+          <textarea class="sample-comment">${escapeHTML(data.comment || "")}</textarea>
+        </div>
+      `;
+
+      container.appendChild(block);
+
+      block.querySelector(".gps-btn").addEventListener("click", () => tagGPS(number));
+      block.querySelector(".manual-gps-btn").addEventListener("click", () => manualGPS(number));
+      block.querySelector(".remove-sample-btn").addEventListener("click", () => block.remove());
+      block.querySelector(".add-param-btn").addEventListener("click", () => addParamRow(number));
+
+      const params = data.parameters || getObjectiveParameters();
+      params.forEach(param => {
+        if (typeof param === "string") addParamRow(number, param);
+        else addParamRow(number, param.parameter, param);
+      });
+
+      updateCoordinateBadge(number);
+
+      /*
+        Attempt GPS automatically but do not interrupt the user or display a
+        permission dialog outside the user-initiated flow in most browsers.
+      */
+      if (!data.lat && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            block.dataset.lat = position.coords.latitude;
+            block.dataset.lon = position.coords.longitude;
+            updateCoordinateBadge(number);
+          },
+          () => {},
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+        );
       }
     }
-  }
 
-  // ----- PDF export (jsPDF dynamic load) -----
-  async function loadJsPDF() {
-    // Try to import jspdf from CDN (the service worker caches it too)
-    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf;
-    try {
-      // load UMD bundle
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
-      });
-      return window.jspdf;
-    } catch (e) {
-      console.warn('Failed to load jsPDF', e);
-      throw e;
+    function getObjectiveParameters() {
+      const values = [...document.querySelectorAll(".obj-param")].map(item => item.value.trim()).filter(Boolean);
+      return values.length ? values : ["Turbidity (NTU)"];
     }
-  }
 
-  async function generatePDF() {
-    try {
-      await saveProgress(true);
-      await loadJsPDF();
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-      // ... PDF generation logic continues (omitted for brevity in this commit)
-    } catch (e) { console.error('PDF generation failed', e); alert('PDF generation failed: ' + e.message); }
-  }
-
-  // (Other functions like gatherFormState, populateFromMasterData, initScrollFixForElements, autoResize,
-  // addParamRowToSample, runExceedanceCheck, syncObjectiveNames, removeRow, removeObjectiveRow, addObjectiveRow,
-  // addLocationRow, etc. remain unchanged below and are not shown in this diff for brevity.)
-
-  // Initialize UI on load
-  window.addEventListener('load', () => {
-    populateProjectSelector();
-    if (!loadSavedProgressForProject()) {
-      // create an initial sample block
-      window.sampleCount = 0;
-      addSampleBlock();
-    } else {
-      window.sampleCount = document.querySelectorAll('.sample-block').length || 0;
-    }
-    setSyncStatus('local');
-    // attach other initializers (signature, photo load, objectives sync, etc.)
-  });
-
-</script>
-</body>
-</html>
+    function updateCoordinateBadge(sampleNumber) {
+      const block = document.getElementById(`sample-block-${sampleNumber}`);
+      const badge = document.getElementById(`coord-${sampleNumber}`);
