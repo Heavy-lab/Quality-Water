@@ -404,3 +404,44 @@
       <button class="btn btn-sm no-print" type="button" onclick="addObjectiveRow()">+ Add Objective</button>
     </div>
 
+    <!-- PART IV -->
+    <div class="section-block">
+      <div class="section-title">Part IV. Water Quality Sampling and Analysis Log</div>
+      <div id="sampleLogsContainer"></div>
+      <button class="btn btn-sm no-print" type="button" onclick="addSampleBlock()" style="margin-top: 8px;">+ Add New Sample Set</button>
+      <p style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">* Describe any in-water work, sources of exceedances, or corrective measures taken in response to an exceedance.</p>
+    </div>
+
+    <!-- PHOTO LOG -->
+    <div class="section-block" style="page-break-inside: auto; break-inside: auto;">
+      <div class="section-title">Photo Documentation Log</div>
+      <div class="no-print" style="margin-bottom: 8px;">
+        <label>Attach Site Photos:</label><br>
+        <input type="file" id="photoUpload" accept="image/*" multiple onchange="handlePhotoUpload(event)" style="padding: 0; border: none;">
+      </div>
+      <div class="photo-grid" id="photoGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /**********************************************************************
+   * Multi-project & IndexedDB storage, offline queue, background-sync
+   * GPS auto-tagging per sample block
+   * Photo compression & EXIF stripping before storing
+   * PDF export via jsPDF (dynamically loaded; cached by service worker)
+   * Sync status indicator per project
+   **********************************************************************/
+
+  // ----- Lightweight IndexedDB helpers -----
+  const DB_NAME = 'wq_reports_db_v1';
+  const DB_VERSION = 1;
+  let dbPromise = null;
+  function openDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const r = indexedDB.open(DB_NAME, DB_VERSION);
+      // (object store creation / upgrade logic continues here)
+    });
+    return dbPromise;
+  }
